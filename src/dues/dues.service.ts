@@ -99,18 +99,36 @@ export class DuesService {
     return { generated, exempt };
   }
 
-  async findAll(user: { id: string; role: Role }): Promise<DuesPayment[]> {
-    const isAdmin = ADMIN_ROLES.includes(user.role);
+  async findAll(user: { userId: string; role: Role }): Promise<DuesPayment[]> {
+    const canSeeAll = [
+      Role.SUPER_ADMIN,
+      Role.ADMIN,
+      Role.PRESIDENTE,
+      Role.SECRETARIO,
+      Role.TESORERO,
+    ].includes(user.role);
 
-    if (isAdmin) {
+    if (canSeeAll) {
       return this.paymentRepo.find({
         relations: ['user', 'house'],
         order: { year: 'DESC', month: 'DESC' },
       });
     }
 
+    // VECINO: return payments for their assigned house
+    const userRecord = await this.userRepo.findOne({ where: { id: user.userId } });
+
+    if (userRecord?.houseId) {
+      return this.paymentRepo.find({
+        where: { houseId: userRecord.houseId },
+        relations: ['user', 'house'],
+        order: { year: 'DESC', month: 'DESC' },
+      });
+    }
+
+    // No house assigned: only their own payments
     return this.paymentRepo.find({
-      where: { userId: user.id },
+      where: { userId: user.userId },
       relations: ['user', 'house'],
       order: { year: 'DESC', month: 'DESC' },
     });
