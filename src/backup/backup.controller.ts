@@ -10,7 +10,7 @@ import { Role } from '../auth/roles.enum';
 @Controller('backup')
 export class BackupController {
   @Get('download')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   downloadBackup(@Res() res: Response) {
     const host = process.env.DB_HOST;
     const port = process.env.DB_PORT || '5432';
