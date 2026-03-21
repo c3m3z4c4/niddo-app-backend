@@ -35,6 +35,13 @@ async function bootstrap() {
     'Temporal2025!',
   );
 
+  await usersService.createSeedVecino(
+    'Juan',
+    'Vecino',
+    'vecino@privadasdelparque.com',
+    'Vecino2025!',
+  );
+
   await app.listen(3000, '0.0.0.0');
   console.log(`✅ Backend running on http://0.0.0.0:3000`);
 }

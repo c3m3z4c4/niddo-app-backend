@@ -161,4 +161,25 @@ export class UsersService {
     });
     await this.usersRepository.save(user);
   }
+
+  async createSeedVecino(
+    name: string,
+    lastName: string,
+    email: string,
+    password: string,
+  ): Promise<void> {
+    const exists = await this.usersRepository.findOne({ where: { email } });
+    if (exists) return;
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = this.usersRepository.create({
+      name,
+      lastName,
+      email,
+      password: hashed,
+      role: Role.VECINO,
+      isActive: true,
+    });
+    await this.usersRepository.save(user);
+  }
 }
