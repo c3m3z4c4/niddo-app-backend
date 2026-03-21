@@ -14,6 +14,7 @@ import { DuesModule } from './dues/dues.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RsvpsModule } from './rsvps/rsvps.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { RsvpsModule } from './rsvps/rsvps.module';
     NotificationsModule,
     ProjectsModule,
     RsvpsModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [AppService],
