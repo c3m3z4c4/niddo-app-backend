@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { House } from './houses.entity';
+import { User } from '../users/users.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 
@@ -14,6 +15,8 @@ export class HousesService {
   constructor(
     @InjectRepository(House)
     private housesRepository: Repository<House>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async findAll(): Promise<House[]> {
@@ -69,6 +72,25 @@ export class HousesService {
   async remove(id: string): Promise<void> {
     const house = await this.findOne(id);
     await this.housesRepository.remove(house);
+  }
+
+  async assignResidents(houseId: string, userIds: string[]): Promise<House> {
+    await this.findOne(houseId); // verify house exists
+
+    // Unassign all current residents of this house
+    await this.usersRepository.update({ houseId }, { houseId: null } as any);
+
+    // Assign selected users to this house
+    if (userIds.length > 0) {
+      await this.usersRepository
+        .createQueryBuilder()
+        .update(User)
+        .set({ houseId })
+        .whereInIds(userIds)
+        .execute();
+    }
+
+    return this.findOne(houseId);
   }
 
   async importHouses(

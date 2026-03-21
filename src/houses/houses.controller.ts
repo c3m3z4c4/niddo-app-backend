@@ -16,6 +16,7 @@ import { HousesService } from './houses.service';
 import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 import { ImportHousesDto } from './dto/import-houses.dto';
+import { AssignResidentsDto } from './dto/assign-residents.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('houses')
@@ -44,6 +45,12 @@ export class HousesController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   update(@Param('id') id: string, @Body() dto: UpdateHouseDto) {
     return this.housesService.update(id, dto);
+  }
+
+  @Patch(':id/residents')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  assignResidents(@Param('id') id: string, @Body() dto: AssignResidentsDto) {
+    return this.housesService.assignResidents(id, dto.userIds);
   }
 
   @Post('import')
