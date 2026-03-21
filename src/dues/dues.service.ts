@@ -18,7 +18,13 @@ import { ImportPaymentItemDto } from './dto/import-payments.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 
-const EXEMPT_ROLES: Role[] = [Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
+const EXEMPT_ROLES: Role[] = [
+  Role.SUPER_ADMIN,
+  Role.ADMIN,
+  Role.PRESIDENTE,
+  Role.SECRETARIO,
+  Role.TESORERO,
+];
 
 @Injectable()
 export class DuesService {
@@ -255,6 +261,15 @@ export class DuesService {
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
     return { total, paid, pending, exempt, totalAmount, collectedAmount };
+  }
+
+  async deleteAllPayments(requestingRole: Role): Promise<{ deleted: number }> {
+    if (![Role.SUPER_ADMIN, Role.ADMIN].includes(requestingRole)) {
+      throw new ForbiddenException('Solo SUPER_ADMIN o ADMIN pueden eliminar todos los pagos');
+    }
+    const all = await this.paymentRepo.find();
+    await this.paymentRepo.remove(all);
+    return { deleted: all.length };
   }
 
   // ── Promotions ──────────────────────────────────────────────

@@ -94,19 +94,25 @@ export class DuesController {
   }
 
   @Post('import')
-  @Roles(Role.TESORERO)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
   importPayments(@Body() dto: ImportPaymentsDto) {
     return this.duesService.importPayments(dto.payments);
   }
 
+  @Delete('all')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  deleteAllPayments(@Request() req) {
+    return this.duesService.deleteAllPayments(req.user.role);
+  }
+
   @Post()
-  @Roles(Role.TESORERO)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
   createPayment(@Body() dto: CreatePaymentDto) {
     return this.duesService.createPayment(dto);
   }
 
   @Patch(':id')
-  @Roles(Role.TESORERO)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
   updatePayment(@Param('id') id: string, @Body() dto: UpdatePaymentDto) {
     return this.duesService.updatePayment(id, dto);
   }
