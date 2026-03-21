@@ -28,6 +28,9 @@ export class Meeting {
   @Column({ nullable: true })
   endTime: string; // HH:MM
 
+  @Column({ type: 'text', nullable: true })
+  minutes: string; // Acta de la reunión
+
   @Column({ type: 'uuid', nullable: true })
   createdById: string;
 

@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { RsvpsService } from './rsvps.service';
 import { UpsertRsvpDto } from './dto/upsert-rsvp.dto';
 
@@ -11,6 +13,16 @@ export class RsvpsController {
   @Get()
   findAll(@Request() req) {
     return this.rsvpsService.findAllForUser(req.user.id);
+  }
+
+  @Get(':targetType/:targetId/attendance')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'PRESIDENTE', 'SECRETARIO', 'TESORERO')
+  getAttendance(
+    @Param('targetType') targetType: string,
+    @Param('targetId') targetId: string,
+  ) {
+    return this.rsvpsService.findAllForTargetWithUsers(targetType, targetId);
   }
 
   @Post()

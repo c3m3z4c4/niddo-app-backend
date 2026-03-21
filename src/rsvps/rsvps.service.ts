@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rsvp } from './rsvp.entity';
 import { UpsertRsvpDto } from './dto/upsert-rsvp.dto';
+import { User } from '../users/users.entity';
 
 @Injectable()
 export class RsvpsService {
   constructor(
     @InjectRepository(Rsvp)
     private rsvpsRepo: Repository<Rsvp>,
+    @InjectRepository(User)
+    private usersRepo: Repository<User>,
   ) {}
 
   async findAllForUser(userId: string): Promise<Rsvp[]> {
@@ -17,6 +20,14 @@ export class RsvpsService {
 
   async findAllForTarget(targetType: string, targetId: string): Promise<Rsvp[]> {
     return this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
+  }
+
+  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<(Rsvp & { user?: Partial<User> })[]> {
+    const rsvps = await this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
+    const userIds = [...new Set(rsvps.map(r => r.userId))];
+    const users = await this.usersRepo.findByIds(userIds);
+    const usersMap = new Map(users.map(u => [u.id, { id: u.id, name: u.name, lastName: u.lastName, email: u.email, houseId: u.houseId }]));
+    return rsvps.map(r => ({ ...r, user: usersMap.get(r.userId) }));
   }
 
   async upsert(userId: string, dto: UpsertRsvpDto): Promise<Rsvp> {
