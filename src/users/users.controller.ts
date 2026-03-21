@@ -16,7 +16,7 @@ import { Role } from '../auth/roles.enum';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ImportUserDto } from './dto/import-user.dto';
+import { ImportUsersBodyDto } from './dto/import-users-body.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -43,7 +43,7 @@ export class UsersController {
 
   @Post('import')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  importUsers(@Body() body: { users: ImportUserDto[] }) {
+  importUsers(@Body() body: ImportUsersBodyDto) {
     return this.usersService.importUsers(body.users);
   }
 
