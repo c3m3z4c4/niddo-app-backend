@@ -22,6 +22,7 @@ import { GenerateDuesDto } from './dto/generate-dues.dto';
 import { ImportPaymentsDto } from './dto/import-payments.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { CreateDuesPolicyDto } from './dto/create-dues-policy.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('dues')
@@ -115,5 +116,25 @@ export class DuesController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
   updatePayment(@Param('id') id: string, @Body() dto: UpdatePaymentDto) {
     return this.duesService.updatePayment(id, dto);
+  }
+
+  // ── Policy ────────────────────────────────────────────────
+
+  @Get('policy')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  getPolicy() {
+    return this.duesService.getPolicy();
+  }
+
+  @Post('policy')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.TESORERO)
+  setPolicy(@Body() dto: CreateDuesPolicyDto) {
+    return this.duesService.setPolicy(dto);
+  }
+
+  @Get('debtors')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  getDebtors() {
+    return this.duesService.getDebtors();
   }
 }

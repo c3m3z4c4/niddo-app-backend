@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { DuesConfig } from './dues-config.entity';
 import { DuesPayment } from './dues-payment.entity';
 import { DuesPromotion } from './dues-promotion.entity';
+import { DuesPolicy } from './dues-policy.entity';
 import { User } from '../users/users.entity';
 import { Role, ADMIN_ROLES } from '../auth/roles.enum';
 import { CreateDuesConfigDto } from './dto/create-dues-config.dto';
@@ -17,6 +18,7 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { ImportPaymentItemDto } from './dto/import-payments.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { CreateDuesPolicyDto } from './dto/create-dues-policy.dto';
 
 const EXEMPT_ROLES: Role[] = [
   Role.SUPER_ADMIN,
@@ -35,6 +37,8 @@ export class DuesService {
     private paymentRepo: Repository<DuesPayment>,
     @InjectRepository(DuesPromotion)
     private promotionRepo: Repository<DuesPromotion>,
+    @InjectRepository(DuesPolicy)
+    private policyRepo: Repository<DuesPolicy>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {}
@@ -313,5 +317,62 @@ export class DuesService {
     const promo = await this.promotionRepo.findOne({ where: { id } });
     if (!promo) throw new NotFoundException();
     await this.promotionRepo.remove(promo);
+  }
+
+  // ── Policy ──────────────────────────────────────────────────
+
+  async getPolicy(): Promise<DuesPolicy | null> {
+    return this.policyRepo.findOne({ where: {}, order: { createdAt: 'DESC' } });
+  }
+
+  async setPolicy(dto: CreateDuesPolicyDto): Promise<DuesPolicy> {
+    const policy = this.policyRepo.create(dto);
+    return this.policyRepo.save(policy);
+  }
+
+  async getDebtors() {
+    const policy = await this.getPolicy();
+    const mobileLock = policy?.mobileLockMonths ?? 1;
+    const cardLock = policy?.cardLockMonths ?? 3;
+
+    const pending = await this.paymentRepo.find({
+      where: { status: 'pending' },
+      relations: ['user', 'house'],
+      order: { year: 'DESC', month: 'DESC' },
+    });
+
+    const byUser = new Map<string, typeof pending>();
+    for (const p of pending) {
+      if (!byUser.has(p.userId)) byUser.set(p.userId, []);
+      byUser.get(p.userId)!.push(p);
+    }
+
+    return Array.from(byUser.entries())
+      .map(([userId, payments]) => {
+        const pendingMonths = payments.length;
+        const user = payments[0].user;
+        const house = payments[0].house;
+
+        let accessStatus: 'active' | 'mobile_suspended' | 'card_suspended';
+        if (pendingMonths >= cardLock) accessStatus = 'card_suspended';
+        else if (pendingMonths >= mobileLock) accessStatus = 'mobile_suspended';
+        else accessStatus = 'active';
+
+        return {
+          userId,
+          userName: user ? `${user.name} ${user.lastName}` : userId,
+          userEmail: user?.email ?? '',
+          houseNumber: house?.houseNumber ?? '',
+          houseAddress: house?.address ?? '',
+          pendingMonths,
+          accessStatus,
+          pendingPayments: payments.map(p => ({
+            month: p.month,
+            year: p.year,
+            amount: Number(p.amount),
+          })),
+        };
+      })
+      .sort((a, b) => b.pendingMonths - a.pendingMonths);
   }
 }
