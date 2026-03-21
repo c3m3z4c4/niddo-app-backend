@@ -2,6 +2,7 @@ import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/roles.enum';
 import { RsvpsService } from './rsvps.service';
 import { UpsertRsvpDto } from './dto/upsert-rsvp.dto';
 
@@ -12,12 +13,12 @@ export class RsvpsController {
 
   @Get()
   findAll(@Request() req) {
-    return this.rsvpsService.findAllForUser(req.user.id);
+    return this.rsvpsService.findAllForUser(req.user.userId);
   }
 
   @Get(':targetType/:targetId/attendance')
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN', 'PRESIDENTE', 'SECRETARIO', 'TESORERO')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getAttendance(
     @Param('targetType') targetType: string,
     @Param('targetId') targetId: string,
@@ -27,7 +28,7 @@ export class RsvpsController {
 
   @Post()
   upsert(@Request() req, @Body() dto: UpsertRsvpDto) {
-    return this.rsvpsService.upsert(req.user.id, dto);
+    return this.rsvpsService.upsert(req.user.userId, dto);
   }
 
   @Delete(':targetType/:targetId')
@@ -36,6 +37,6 @@ export class RsvpsController {
     @Param('targetType') targetType: string,
     @Param('targetId') targetId: string,
   ) {
-    return this.rsvpsService.remove(req.user.id, targetType, targetId);
+    return this.rsvpsService.remove(req.user.userId, targetType, targetId);
   }
 }
