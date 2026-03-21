@@ -8,15 +8,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './users.entity';
+import { House } from '../houses/houses.entity';
 import { Role, UNIQUE_ROLES } from '../auth/roles.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ImportUserDto } from './dto/import-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(House)
+    private housesRepository: Repository<House>,
   ) {}
 
   private async ensureUniqueRole(role: Role, excludeUserId?: string) {
@@ -138,6 +142,53 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`Usuario con id ${id} no encontrado`);
     await this.usersRepository.remove(user);
+  }
+
+  async importUsers(
+    dtos: ImportUserDto[],
+  ): Promise<{ created: number; skipped: number; skippedEmails: string[] }> {
+    const houses = await this.housesRepository.find();
+    const houseByNumber = new Map(houses.map((h) => [h.houseNumber, h.id]));
+
+    let created = 0;
+    let skipped = 0;
+    const skippedEmails: string[] = [];
+
+    const DEFAULT_PASSWORD = 'Bienvenido2026!';
+    const PLACEHOLDER = 'Por Llenar';
+
+    for (const dto of dtos) {
+      const exists = await this.usersRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (exists) {
+        skipped++;
+        skippedEmails.push(dto.email);
+        continue;
+      }
+
+      const rawPassword = dto.password && dto.password !== PLACEHOLDER
+        ? dto.password
+        : DEFAULT_PASSWORD;
+      const hashed = await bcrypt.hash(rawPassword, 10);
+      const houseId = dto.houseNumber
+        ? houseByNumber.get(dto.houseNumber)
+        : undefined;
+
+      const user = this.usersRepository.create({
+        name: dto.name || PLACEHOLDER,
+        lastName: dto.lastName || PLACEHOLDER,
+        email: dto.email,
+        password: hashed,
+        phone: dto.phone && dto.phone !== PLACEHOLDER ? dto.phone : undefined,
+        role: dto.role ?? Role.VECINO,
+        houseId: houseId || undefined,
+      });
+      await this.usersRepository.save(user);
+      created++;
+    }
+
+    return { created, skipped, skippedEmails };
   }
 
   // Used internally for seeding
