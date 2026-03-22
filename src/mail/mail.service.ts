@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -22,8 +22,8 @@ export class MailService {
     meeting: { title: string; date: string; startTime: string; location: string; description?: string },
   ): Promise<{ sent: number; failed: number }> {
     if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-      throw new Error(
-        'Configuración de correo no disponible. Configure las variables MAIL_USER y MAIL_PASS en el servidor.',
+      throw new ServiceUnavailableException(
+        'Correo no configurado. Configure MAIL_USER y MAIL_PASS en las variables de entorno del servidor.',
       );
     }
 
@@ -93,6 +93,15 @@ export class MailService {
       `Mesa Directiva Privadas del Parque <${process.env.MAIL_USER}>`;
     const subject = `Convocatoria: ${meeting.title} — ${dayNum} de ${monthLong} de ${year}`;
     const transporter = this.makeTransporter();
+
+    // Verify SMTP connection before sending
+    try {
+      await transporter.verify();
+    } catch (err) {
+      throw new ServiceUnavailableException(
+        `No se pudo conectar al servidor de correo. Verifique MAIL_HOST, MAIL_USER y MAIL_PASS. (${err instanceof Error ? err.message : err})`,
+      );
+    }
 
     let sent = 0;
     let failed = 0;
