@@ -14,6 +14,8 @@ RUN pnpm run build
 FROM node:20-alpine AS production
 WORKDIR /app
 
+RUN apk add --no-cache postgresql-client
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-lock.yaml ./
