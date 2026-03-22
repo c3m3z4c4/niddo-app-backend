@@ -79,12 +79,18 @@ export class MeetingsService {
     await this.meetingsRepo.remove(meeting);
   }
 
-  async sendInvitation(id: string): Promise<{ sent: number; failed: number }> {
+  async sendInvitation(
+    id: string,
+    emails?: string[],
+  ): Promise<{ sent: number; failed: number }> {
     const meeting = await this.findOne(id);
-    const users = await this.usersService.findAll();
-    const emails = users
-      .filter((u) => u.isActive !== false && u.email)
-      .map((u) => u.email);
-    return this.mailService.sendMeetingInvitation(emails, meeting);
+    let targets = emails;
+    if (!targets || targets.length === 0) {
+      const users = await this.usersService.findAll();
+      targets = users
+        .filter((u) => u.isActive !== false && u.email)
+        .map((u) => u.email);
+    }
+    return this.mailService.sendMeetingInvitation(targets, meeting);
   }
 }

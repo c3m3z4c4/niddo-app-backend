@@ -50,8 +50,8 @@ export class MeetingsController {
   @Post(':id/send-invitation')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  sendInvitation(@Param('id') id: string) {
-    return this.meetingsService.sendInvitation(id);
+  sendInvitation(@Param('id') id: string, @Body() body: { emails?: string[] }) {
+    return this.meetingsService.sendInvitation(id, body?.emails);
   }
 
   @Delete(':id')
