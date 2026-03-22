@@ -146,11 +146,12 @@ export class UsersService {
 
   async importUsers(
     dtos: ImportUserDto[],
-  ): Promise<{ created: number; skipped: number; skippedEmails: string[] }> {
+  ): Promise<{ created: number; updated: number; skipped: number; skippedEmails: string[] }> {
     const houses = await this.housesRepository.find();
     const houseByNumber = new Map(houses.map((h) => [h.houseNumber, h.id]));
 
     let created = 0;
+    let updated = 0;
     let skipped = 0;
     const skippedEmails: string[] = [];
 
@@ -162,8 +163,20 @@ export class UsersService {
         where: { email: dto.email },
       });
       if (exists) {
-        skipped++;
-        skippedEmails.push(dto.email);
+        const newName = dto.name && dto.name !== PLACEHOLDER ? dto.name : null;
+        const newLastName = dto.lastName && dto.lastName !== PLACEHOLDER ? dto.lastName : null;
+        const needsUpdate =
+          (exists.name === PLACEHOLDER && newName) ||
+          (exists.lastName === PLACEHOLDER && newLastName);
+        if (needsUpdate) {
+          if (exists.name === PLACEHOLDER && newName) exists.name = newName;
+          if (exists.lastName === PLACEHOLDER && newLastName) exists.lastName = newLastName;
+          await this.usersRepository.save(exists);
+          updated++;
+        } else {
+          skipped++;
+          skippedEmails.push(dto.email);
+        }
         continue;
       }
 
@@ -188,7 +201,7 @@ export class UsersService {
       created++;
     }
 
-    return { created, skipped, skippedEmails };
+    return { created, updated, skipped, skippedEmails };
   }
 
   // Used internally for seeding
