@@ -28,6 +28,18 @@ export class GreenAreaEvent {
   @Column({ nullable: true })
   endTime: string; // HH:MM
 
+  @Column({ type: 'varchar', default: 'active' })
+  status: 'active' | 'cancelled' | 'postponed';
+
+  @Column({ type: 'text', nullable: true })
+  cancelReason: string;
+
+  @Column({ nullable: true })
+  originalDate: string;
+
+  @Column({ nullable: true })
+  originalStartTime: string;
+
   @Column({ type: 'uuid', nullable: true })
   createdById: string;
 

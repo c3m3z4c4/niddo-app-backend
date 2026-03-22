@@ -47,6 +47,23 @@ export class MeetingsController {
     return this.meetingsService.update(id, dto);
   }
 
+  @Patch(':id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  cancel(@Param('id') id: string, @Body() body: { reason?: string }) {
+    return this.meetingsService.cancel(id, body?.reason);
+  }
+
+  @Patch(':id/postpone')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  postpone(
+    @Param('id') id: string,
+    @Body() body: { date: string; startTime: string; endTime?: string },
+  ) {
+    return this.meetingsService.postpone(id, body);
+  }
+
   @Post(':id/send-invitation')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)

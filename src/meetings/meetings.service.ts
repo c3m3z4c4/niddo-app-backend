@@ -11,6 +11,7 @@ import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { ConflictService } from '../shared/conflict.service';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MeetingsService {
@@ -20,6 +21,7 @@ export class MeetingsService {
     private conflictService: ConflictService,
     private usersService: UsersService,
     private mailService: MailService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(): Promise<Meeting[]> {
@@ -77,6 +79,47 @@ export class MeetingsService {
   async remove(id: string): Promise<void> {
     const meeting = await this.findOne(id);
     await this.meetingsRepo.remove(meeting);
+  }
+
+  async cancel(id: string, reason?: string): Promise<Meeting> {
+    const meeting = await this.findOne(id);
+    meeting.status = 'cancelled';
+    if (reason) meeting.cancelReason = reason;
+    const saved = await this.meetingsRepo.save(meeting);
+    await this.notificationsService.createForAllVecinos(
+      'cancelled_meeting',
+      `Reunión cancelada: ${meeting.title}`,
+      reason
+        ? `La reunión del ${meeting.date} ha sido cancelada. Motivo: ${reason}`
+        : `La reunión del ${meeting.date} ha sido cancelada.`,
+      id,
+      'meeting',
+    );
+    return saved;
+  }
+
+  async postpone(
+    id: string,
+    dto: { date: string; startTime: string; endTime?: string },
+  ): Promise<Meeting> {
+    const meeting = await this.findOne(id);
+    const prevDate = meeting.date;
+    const prevStartTime = meeting.startTime;
+    meeting.originalDate = meeting.originalDate ?? prevDate;
+    meeting.originalStartTime = meeting.originalStartTime ?? prevStartTime;
+    meeting.date = dto.date;
+    meeting.startTime = dto.startTime;
+    if (dto.endTime !== undefined) meeting.endTime = dto.endTime;
+    meeting.status = 'postponed';
+    const saved = await this.meetingsRepo.save(meeting);
+    await this.notificationsService.createForAllVecinos(
+      'postponed_meeting',
+      `Reunión reprogramada: ${meeting.title}`,
+      `La reunión ha sido reprogramada al ${dto.date} a las ${dto.startTime}.`,
+      id,
+      'meeting',
+    );
+    return saved;
   }
 
   async sendInvitation(

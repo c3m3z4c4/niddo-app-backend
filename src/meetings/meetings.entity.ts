@@ -29,7 +29,28 @@ export class Meeting {
   endTime: string; // HH:MM
 
   @Column({ type: 'text', nullable: true })
-  minutes: string; // Acta de la reunión
+  minutes: string; // Desarrollo de la asamblea
+
+  @Column({ type: 'text', nullable: true })
+  minutesAgreements: string; // Acuerdos y resoluciones
+
+  @Column({ type: 'text', nullable: true })
+  minutesResponsibles: string; // Responsables y seguimiento
+
+  @Column({ nullable: true })
+  minutesClosingTime: string; // HH:MM — hora de clausura
+
+  @Column({ type: 'varchar', default: 'active' })
+  status: 'active' | 'cancelled' | 'postponed';
+
+  @Column({ type: 'text', nullable: true })
+  cancelReason: string;
+
+  @Column({ nullable: true })
+  originalDate: string; // YYYY-MM-DD — set on postpone
+
+  @Column({ nullable: true })
+  originalStartTime: string; // HH:MM — set on postpone
 
   @Column({ type: 'uuid', nullable: true })
   createdById: string;

@@ -20,8 +20,8 @@ export class Notification {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ type: 'enum', enum: ['new_event', 'new_meeting'] })
-  type: 'new_event' | 'new_meeting';
+  @Column({ type: 'varchar' })
+  type: 'new_event' | 'new_meeting' | 'cancelled_event' | 'cancelled_meeting' | 'postponed_event' | 'postponed_meeting';
 
   @Column()
   title: string;

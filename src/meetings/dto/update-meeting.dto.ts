@@ -31,4 +31,17 @@ export class UpdateMeetingDto {
   @IsOptional()
   @IsString()
   minutes?: string;
+
+  @IsOptional()
+  @IsString()
+  minutesAgreements?: string;
+
+  @IsOptional()
+  @IsString()
+  minutesResponsibles?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/, { message: 'minutesClosingTime must be HH:MM' })
+  minutesClosingTime?: string;
 }

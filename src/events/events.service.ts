@@ -9,6 +9,7 @@ import { GreenAreaEvent } from './events.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ConflictService } from '../shared/conflict.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EventsService {
@@ -16,6 +17,7 @@ export class EventsService {
     @InjectRepository(GreenAreaEvent)
     private eventsRepo: Repository<GreenAreaEvent>,
     private conflictService: ConflictService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(): Promise<GreenAreaEvent[]> {
@@ -73,5 +75,44 @@ export class EventsService {
   async remove(id: string): Promise<void> {
     const event = await this.findOne(id);
     await this.eventsRepo.remove(event);
+  }
+
+  async cancel(id: string, reason?: string): Promise<GreenAreaEvent> {
+    const event = await this.findOne(id);
+    event.status = 'cancelled';
+    if (reason) event.cancelReason = reason;
+    const saved = await this.eventsRepo.save(event);
+    await this.notificationsService.createForAllVecinos(
+      'cancelled_event',
+      `Evento cancelado: ${event.title}`,
+      reason
+        ? `El evento del ${event.date} ha sido cancelado. Motivo: ${reason}`
+        : `El evento del ${event.date} ha sido cancelado.`,
+      id,
+      'event',
+    );
+    return saved;
+  }
+
+  async postpone(
+    id: string,
+    dto: { date: string; startTime: string; endTime?: string },
+  ): Promise<GreenAreaEvent> {
+    const event = await this.findOne(id);
+    event.originalDate = event.originalDate ?? event.date;
+    event.originalStartTime = event.originalStartTime ?? event.startTime;
+    event.date = dto.date;
+    event.startTime = dto.startTime;
+    if (dto.endTime !== undefined) event.endTime = dto.endTime;
+    event.status = 'postponed';
+    const saved = await this.eventsRepo.save(event);
+    await this.notificationsService.createForAllVecinos(
+      'postponed_event',
+      `Evento reprogramado: ${event.title}`,
+      `El evento ha sido reprogramado al ${dto.date} a las ${dto.startTime}.`,
+      id,
+      'event',
+    );
+    return saved;
   }
 }

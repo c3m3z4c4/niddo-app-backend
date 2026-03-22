@@ -15,7 +15,7 @@ export class NotificationsService {
   ) {}
 
   async createForAllVecinos(
-    type: 'new_event' | 'new_meeting',
+    type: 'new_event' | 'new_meeting' | 'cancelled_event' | 'cancelled_meeting' | 'postponed_event' | 'postponed_meeting',
     title: string,
     message: string,
     targetId: string,

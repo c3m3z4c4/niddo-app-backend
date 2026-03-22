@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Rsvp } from './rsvp.entity';
 import { UpsertRsvpDto } from './dto/upsert-rsvp.dto';
 import { User } from '../users/users.entity';
@@ -22,11 +22,18 @@ export class RsvpsService {
     return this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
   }
 
-  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<(Rsvp & { user?: Partial<User> })[]> {
+  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<(Rsvp & { user?: Partial<User> & { house?: { houseNumber: string; address?: string } } })[]> {
     const rsvps = await this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
     const userIds = [...new Set(rsvps.map(r => r.userId))];
-    const users = await this.usersRepo.findByIds(userIds);
-    const usersMap = new Map(users.map(u => [u.id, { id: u.id, name: u.name, lastName: u.lastName, email: u.email, houseId: u.houseId }]));
+    const users = await this.usersRepo.find({ where: { id: In(userIds) }, relations: ['house'] });
+    const usersMap = new Map(users.map(u => [u.id, {
+      id: u.id,
+      name: u.name,
+      lastName: u.lastName,
+      email: u.email,
+      houseId: u.houseId,
+      house: u.house ? { houseNumber: u.house.houseNumber, address: u.house.address } : undefined,
+    }]));
     return rsvps.map(r => ({ ...r, user: usersMap.get(r.userId) }));
   }
 
