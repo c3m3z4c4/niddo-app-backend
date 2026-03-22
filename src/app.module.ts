@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RsvpsModule } from './rsvps/rsvps.module';
 import { BackupModule } from './backup/backup.module';
+import { ReservationsModule } from './reservations/reservations.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { BackupModule } from './backup/backup.module';
     ProjectsModule,
     RsvpsModule,
     BackupModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
