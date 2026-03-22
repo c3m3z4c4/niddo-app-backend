@@ -16,6 +16,7 @@ import { Role } from '../auth/roles.enum';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReviewReservationDto } from './dto/review-reservation.dto';
+import { CloseReservationDto } from './dto/close-reservation.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('reservations')
@@ -40,6 +41,16 @@ export class ReservationsController {
     @Request() req,
   ) {
     return this.service.review(id, dto, req.user);
+  }
+
+  @Patch(':id/close')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  close(
+    @Param('id') id: string,
+    @Body() dto: CloseReservationDto,
+    @Request() req,
+  ) {
+    return this.service.close(id, dto, req.user);
   }
 
   @Delete(':id')

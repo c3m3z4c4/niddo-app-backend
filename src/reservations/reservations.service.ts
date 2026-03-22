@@ -9,6 +9,7 @@ import { GreenAreaReservation } from './reservation.entity';
 import { DuesPayment } from '../dues/dues-payment.entity';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReviewReservationDto } from './dto/review-reservation.dto';
+import { CloseReservationDto } from './dto/close-reservation.dto';
 import { User } from '../users/users.entity';
 import { Role } from '../auth/roles.enum';
 
@@ -70,6 +71,27 @@ export class ReservationsService {
     reservation.status = dto.status;
     reservation.adminNotes = dto.adminNotes ?? undefined;
     reservation.reviewedById = reviewer.id;
+    return this.repo.save(reservation);
+  }
+
+  async close(
+    id: string,
+    dto: CloseReservationDto,
+    closer: User,
+  ): Promise<GreenAreaReservation> {
+    const reservation = await this.repo.findOne({ where: { id } });
+    if (!reservation) throw new NotFoundException('Solicitud no encontrada');
+    if (reservation.status !== 'approved') {
+      throw new ForbiddenException('Solo se pueden cerrar reservaciones aprobadas');
+    }
+
+    reservation.status = 'closed';
+    reservation.checklistBanos = dto.checklistBanos;
+    reservation.checklistInstalaciones = dto.checklistInstalaciones;
+    reservation.closureNotes = dto.closureNotes;
+    reservation.chargeAmount = dto.chargeAmount;
+    reservation.closedById = closer.id;
+    reservation.closedAt = new Date();
     return this.repo.save(reservation);
   }
 

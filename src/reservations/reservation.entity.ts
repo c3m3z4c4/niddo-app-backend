@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
-export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'closed';
 
 @Entity('green_area_reservations')
 export class GreenAreaReservation {
@@ -53,6 +53,29 @@ export class GreenAreaReservation {
   @ManyToOne(() => User, { eager: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'reviewedById' })
   reviewedBy: User;
+
+  // ── Closure (post-event) ────────────────────────────────────────────────
+  @Column({ nullable: true })
+  closedById?: string;
+
+  @ManyToOne(() => User, { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'closedById' })
+  closedBy?: User;
+
+  @Column({ type: 'timestamp', nullable: true })
+  closedAt?: Date;
+
+  @Column({ default: false })
+  checklistBanos: boolean;
+
+  @Column({ default: false })
+  checklistInstalaciones: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  closureNotes?: string;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  chargeAmount?: number;
 
   @CreateDateColumn()
   createdAt: Date;
