@@ -9,6 +9,8 @@ import { Meeting } from './meetings.entity';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { ConflictService } from '../shared/conflict.service';
+import { UsersService } from '../users/users.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class MeetingsService {
@@ -16,6 +18,8 @@ export class MeetingsService {
     @InjectRepository(Meeting)
     private meetingsRepo: Repository<Meeting>,
     private conflictService: ConflictService,
+    private usersService: UsersService,
+    private mailService: MailService,
   ) {}
 
   async findAll(): Promise<Meeting[]> {
@@ -73,5 +77,14 @@ export class MeetingsService {
   async remove(id: string): Promise<void> {
     const meeting = await this.findOne(id);
     await this.meetingsRepo.remove(meeting);
+  }
+
+  async sendInvitation(id: string): Promise<{ sent: number; failed: number }> {
+    const meeting = await this.findOne(id);
+    const users = await this.usersService.findAll();
+    const emails = users
+      .filter((u) => u.isActive !== false && u.email)
+      .map((u) => u.email);
+    return this.mailService.sendMeetingInvitation(emails, meeting);
   }
 }

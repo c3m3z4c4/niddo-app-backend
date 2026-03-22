@@ -47,6 +47,13 @@ export class MeetingsController {
     return this.meetingsService.update(id, dto);
   }
 
+  @Post(':id/send-invitation')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  sendInvitation(@Param('id') id: string) {
+    return this.meetingsService.sendInvitation(id);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
