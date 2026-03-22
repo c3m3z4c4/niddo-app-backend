@@ -165,12 +165,15 @@ export class UsersService {
       if (exists) {
         const newName = dto.name && dto.name !== PLACEHOLDER ? dto.name : null;
         const newLastName = dto.lastName && dto.lastName !== PLACEHOLDER ? dto.lastName : null;
+        const newPhone = dto.phone && dto.phone !== PLACEHOLDER && dto.phone !== '-' ? dto.phone : null;
         const needsUpdate =
           (exists.name === PLACEHOLDER && newName) ||
-          (exists.lastName === PLACEHOLDER && newLastName);
+          (exists.lastName === PLACEHOLDER && newLastName) ||
+          (!exists.phone && newPhone);
         if (needsUpdate) {
           if (exists.name === PLACEHOLDER && newName) exists.name = newName;
           if (exists.lastName === PLACEHOLDER && newLastName) exists.lastName = newLastName;
+          if (!exists.phone && newPhone) exists.phone = newPhone;
           await this.usersRepository.save(exists);
           updated++;
         } else {
