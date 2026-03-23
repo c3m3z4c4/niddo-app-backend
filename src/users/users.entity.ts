@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
 } from 'typeorm';
 import { Role } from '../auth/roles.enum';
@@ -42,12 +43,15 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @ManyToOne(() => House, (house) => house.residents, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => House, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'houseId' })
   house: House;
 
   @Column({ nullable: true })
   houseId: string;
+
+  @ManyToMany(() => House, (house) => house.residents)
+  houses: House[];
 
   @CreateDateColumn()
   createdAt: Date;

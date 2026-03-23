@@ -3,7 +3,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  OneToMany,
+  ManyToMany,
+  JoinTable,
   Unique,
 } from 'typeorm';
 import { User } from '../users/users.entity';
@@ -36,7 +37,12 @@ export class House {
   })
   type: HouseType;
 
-  @OneToMany(() => User, (user) => user.house)
+  @ManyToMany(() => User, (user) => user.houses)
+  @JoinTable({
+    name: 'house_residents',
+    joinColumn: { name: 'houseId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'userId', referencedColumnName: 'id' },
+  })
   residents: User[];
 
   @CreateDateColumn()

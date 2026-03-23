@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { House } from './houses.entity';
 import { User } from '../users/users.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
@@ -77,20 +77,17 @@ export class HousesService {
   }
 
   async assignResidents(houseId: string, userIds: string[]): Promise<House> {
-    await this.findOne(houseId); // verify house exists
+    const house = await this.housesRepository.findOne({
+      where: { id: houseId },
+      relations: ['residents'],
+    });
+    if (!house) throw new NotFoundException(`Casa con id ${houseId} no encontrada`);
 
-    // Unassign all current residents of this house
-    await this.usersRepository.update({ houseId }, { houseId: null } as any);
-
-    // Assign selected users to this house
-    if (userIds.length > 0) {
-      await this.usersRepository
-        .createQueryBuilder()
-        .update(User)
-        .set({ houseId })
-        .whereInIds(userIds)
-        .execute();
-    }
+    // Update ManyToMany join table
+    house.residents = userIds.length > 0
+      ? await this.usersRepository.findBy({ id: In(userIds) })
+      : [];
+    await this.housesRepository.save(house);
 
     return this.findOne(houseId);
   }
