@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { House } from './houses.entity';
 import { User } from '../users/users.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
@@ -37,7 +37,7 @@ export class HousesService {
 
   async create(dto: CreateHouseDto): Promise<House> {
     const exists = await this.housesRepository.findOne({
-      where: { houseNumber: dto.houseNumber, address: dto.address ?? null },
+      where: { houseNumber: dto.houseNumber, address: dto.address ?? IsNull() },
     });
     if (exists)
       throw new ConflictException(
@@ -59,7 +59,7 @@ export class HousesService {
     const newAddress = dto.address ?? house.address;
     if (newNumber !== house.houseNumber || newAddress !== house.address) {
       const exists = await this.housesRepository.findOne({
-        where: { houseNumber: newNumber, address: newAddress ?? null },
+        where: { houseNumber: newNumber, address: newAddress ?? IsNull() },
       });
       if (exists && exists.id !== id)
         throw new ConflictException(
@@ -105,7 +105,7 @@ export class HousesService {
     for (const dto of houses) {
       if (!dto.houseNumber?.trim()) continue;
       const exists = await this.housesRepository.findOne({
-        where: { houseNumber: dto.houseNumber, address: dto.address ?? null },
+        where: { houseNumber: dto.houseNumber, address: dto.address ?? IsNull() },
       });
       if (exists) {
         skippedNumbers.push(dto.houseNumber);

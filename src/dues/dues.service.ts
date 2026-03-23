@@ -438,7 +438,16 @@ export class DuesService {
       const house = await this.houseRepo.findOne({ where: { id: dto.houseId } });
       if (!house) throw new NotFoundException(`Casa ${dto.houseId} no encontrada`);
     }
-    const record = this.extraordinaryRepo.create({ ...dto, createdById });
+    const record = this.extraordinaryRepo.create({
+      concept: dto.concept,
+      description: dto.description,
+      amount: dto.amount,
+      date: dto.date,
+      category: (dto.category as any) ?? 'otro',
+      houseId: dto.houseId,
+      notes: dto.notes,
+      createdById,
+    });
     return this.extraordinaryRepo.save(record);
   }
 
