@@ -71,6 +71,13 @@ export class MeetingsController {
     return this.meetingsService.sendInvitation(id, body?.emails);
   }
 
+  @Post(':id/draft-minutes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  draftMinutes(@Param('id') id: string) {
+    return this.meetingsService.draftMinutes(id);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)

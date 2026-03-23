@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import Anthropic from '@anthropic-ai/sdk';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Meeting } from './meetings.entity';
@@ -120,6 +122,53 @@ export class MeetingsService {
       'meeting',
     );
     return saved;
+  }
+
+  async draftMinutes(id: string): Promise<{ development: string; agreements: string; responsibles: string }> {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new ServiceUnavailableException('ANTHROPIC_API_KEY no está configurado en el servidor.');
+    }
+    const meeting = await this.findOne(id);
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const agenda = meeting.description?.trim() || 'Sin agenda registrada';
+    const prompt = `Eres el secretario de una junta vecinal del fraccionamiento "Privadas del Parque" en Durango, México.
+
+Se realizó la siguiente reunión:
+- Título: ${meeting.title}
+- Fecha: ${meeting.date}
+- Hora de inicio: ${meeting.startTime}
+- Lugar: ${meeting.location}
+- Orden del día:
+${agenda}
+
+Genera un borrador de minuta como si la junta ya hubiera ocurrido. Responde ÚNICAMENTE con un objeto JSON con estas tres propiedades:
+
+{
+  "development": "texto con el desarrollo de la asamblea, un punto por línea, cada línea empieza con un verbo en pasado (Se planteó, Se acordó, Se discutió, etc.)",
+  "agreements": "texto con los acuerdos y resoluciones, uno por línea en formato 'Tema: descripción del acuerdo.'",
+  "responsibles": "texto con responsables y seguimiento, uno por línea en formato 'Responsable: tarea asignada.'"
+}
+
+No incluyas markdown, no incluyas explicaciones fuera del JSON. Solo el JSON.`;
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
+    try {
+      const parsed = JSON.parse(text);
+      return {
+        development: parsed.development || '',
+        agreements: parsed.agreements || '',
+        responsibles: parsed.responsibles || '',
+      };
+    } catch {
+      throw new ServiceUnavailableException('No se pudo procesar la respuesta del modelo de IA.');
+    }
   }
 
   async sendInvitation(
