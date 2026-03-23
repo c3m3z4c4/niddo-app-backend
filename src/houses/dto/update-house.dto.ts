@@ -14,4 +14,8 @@ export class UpdateHouseDto {
   @IsEnum(['active', 'inactive'])
   @IsOptional()
   status?: 'active' | 'inactive';
+
+  @IsEnum(['terreno', 'en_construccion', 'casa'])
+  @IsOptional()
+  type?: 'terreno' | 'en_construccion' | 'casa';
 }

@@ -86,10 +86,17 @@ export class DuesService {
       where: { isActive: true },
     });
 
+    const allHouses = await this.houseRepo.find({ select: ['id', 'type'] as any });
+    const houseTypeMap = new Map(allHouses.map(h => [h.id, h.type]));
+
     let generated = 0;
     let exempt = 0;
 
     for (const user of activeUsers) {
+      // Terreno houses are not charged dues
+      const houseType = user.houseId ? houseTypeMap.get(user.houseId) : undefined;
+      if (houseType === 'terreno') continue;
+
       const existing = await this.paymentRepo.findOne({
         where: { userId: user.id, month, year },
       });

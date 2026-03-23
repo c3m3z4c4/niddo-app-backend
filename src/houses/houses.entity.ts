@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
+export type HouseType = 'terreno' | 'en_construccion' | 'casa';
+
 @Entity('houses')
 @Unique(['houseNumber', 'address'])
 export class House {
@@ -26,6 +28,13 @@ export class House {
     default: 'active',
   })
   status: 'active' | 'inactive';
+
+  @Column({
+    type: 'enum',
+    enum: ['terreno', 'en_construccion', 'casa'],
+    default: 'casa',
+  })
+  type: HouseType;
 
   @OneToMany(() => User, (user) => user.house)
   residents: User[];
