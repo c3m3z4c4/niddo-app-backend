@@ -22,7 +22,7 @@ export class RsvpsService {
     return this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
   }
 
-  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<(Rsvp & { user?: Partial<User> & { house?: { houseNumber: string; address?: string } } })[]> {
+  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<any[]> {
     const rsvps = await this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
     const userIds = [...new Set(rsvps.map(r => r.userId))];
     const users = await this.usersRepo.find({ where: { id: In(userIds) }, relations: ['house'] });
