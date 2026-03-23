@@ -24,13 +24,11 @@ import { CreateDuesPolicyDto } from './dto/create-dues-policy.dto';
 import { CreateExtraordinaryDto } from './dto/create-extraordinary.dto';
 import { ApplyPromotionDto } from './dto/apply-promotion.dto';
 
-const EXEMPT_ROLES: Role[] = [
-  Role.SUPER_ADMIN,
-  Role.ADMIN,
-  Role.PRESIDENTE,
-  Role.SECRETARIO,
-  Role.TESORERO,
-];
+// These roles never get dues records at all
+const SKIP_ROLES: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
+
+// These roles get dues records but marked as exempt (0 amount)
+const EXEMPT_ROLES: Role[] = [Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
 
 @Injectable()
 export class DuesService {
@@ -93,6 +91,9 @@ export class DuesService {
     let exempt = 0;
 
     for (const user of activeUsers) {
+      // ADMIN/SUPER_ADMIN never appear in dues
+      if (SKIP_ROLES.includes(user.role)) continue;
+
       // Terreno houses are not charged dues
       const houseType = user.houseId ? houseTypeMap.get(user.houseId) : undefined;
       if (houseType === 'terreno') continue;
