@@ -23,6 +23,8 @@ import { ImportPaymentsDto } from './dto/import-payments.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { CreateDuesPolicyDto } from './dto/create-dues-policy.dto';
+import { ApplyPromotionDto } from './dto/apply-promotion.dto';
+import { CreateExtraordinaryDto } from './dto/create-extraordinary.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('dues')
@@ -136,5 +138,45 @@ export class DuesController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getDebtors() {
     return this.duesService.getDebtors();
+  }
+
+  // ── Apply Promotion ────────────────────────────────────────
+
+  @Post('promotions/apply')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  applyPromotion(@Body() dto: ApplyPromotionDto, @Request() req) {
+    return this.duesService.applyPromotion(dto, req.user.role);
+  }
+
+  // ── Extraordinary Income ───────────────────────────────────
+
+  @Get('extraordinary')
+  findAllExtraordinary(@Request() req) {
+    return this.duesService.findAllExtraordinary(req.user);
+  }
+
+  @Post('extraordinary')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  createExtraordinary(@Body() dto: CreateExtraordinaryDto, @Request() req) {
+    return this.duesService.createExtraordinary(dto, req.user.userId);
+  }
+
+  @Patch('extraordinary/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  updateExtraordinary(@Param('id') id: string, @Body() dto: CreateExtraordinaryDto) {
+    return this.duesService.updateExtraordinary(id, dto);
+  }
+
+  @Delete('extraordinary/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  deleteExtraordinary(@Param('id') id: string) {
+    return this.duesService.deleteExtraordinary(id);
+  }
+
+  // ── House History ──────────────────────────────────────────
+
+  @Get('houses/:houseId/history')
+  getHouseHistory(@Param('houseId') houseId: string, @Request() req) {
+    return this.duesService.getHouseHistory(houseId, req.user);
   }
 }

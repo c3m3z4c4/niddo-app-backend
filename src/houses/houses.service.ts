@@ -37,11 +37,11 @@ export class HousesService {
 
   async create(dto: CreateHouseDto): Promise<House> {
     const exists = await this.housesRepository.findOne({
-      where: { houseNumber: dto.houseNumber },
+      where: { houseNumber: dto.houseNumber, address: dto.address ?? null },
     });
     if (exists)
       throw new ConflictException(
-        `El número de casa "${dto.houseNumber}" ya existe`,
+        `La casa "${dto.houseNumber}" en "${dto.address}" ya existe`,
       );
 
     const house = this.housesRepository.create({
@@ -55,13 +55,15 @@ export class HousesService {
   async update(id: string, dto: UpdateHouseDto): Promise<House> {
     const house = await this.findOne(id);
 
-    if (dto.houseNumber && dto.houseNumber !== house.houseNumber) {
+    const newNumber = dto.houseNumber ?? house.houseNumber;
+    const newAddress = dto.address ?? house.address;
+    if (newNumber !== house.houseNumber || newAddress !== house.address) {
       const exists = await this.housesRepository.findOne({
-        where: { houseNumber: dto.houseNumber },
+        where: { houseNumber: newNumber, address: newAddress ?? null },
       });
-      if (exists)
+      if (exists && exists.id !== id)
         throw new ConflictException(
-          `El número de casa "${dto.houseNumber}" ya existe`,
+          `La casa "${newNumber}" en "${newAddress}" ya existe`,
         );
     }
 
@@ -95,17 +97,17 @@ export class HousesService {
 
   async importHouses(
     houses: CreateHouseDto[],
-  ): Promise<{ created: number; skipped: number; skippedNumbers: string[] }> {
+  ): Promise<{ created: number; updated: number; skippedNumbers: string[] }> {
     let created = 0;
-    let skipped = 0;
+    let updated = 0;
     const skippedNumbers: string[] = [];
 
     for (const dto of houses) {
+      if (!dto.houseNumber?.trim()) continue;
       const exists = await this.housesRepository.findOne({
-        where: { houseNumber: dto.houseNumber },
+        where: { houseNumber: dto.houseNumber, address: dto.address ?? null },
       });
       if (exists) {
-        skipped++;
         skippedNumbers.push(dto.houseNumber);
         continue;
       }
@@ -118,6 +120,6 @@ export class HousesService {
       created++;
     }
 
-    return { created, skipped, skippedNumbers };
+    return { created, updated, skippedNumbers };
   }
 }

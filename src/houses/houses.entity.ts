@@ -4,15 +4,17 @@ import {
   Column,
   CreateDateColumn,
   OneToMany,
+  Unique,
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
 @Entity('houses')
+@Unique(['houseNumber', 'address'])
 export class House {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   houseNumber: string;
 
   @Column({ nullable: true })

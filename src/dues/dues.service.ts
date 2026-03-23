@@ -10,6 +10,8 @@ import { DuesConfig } from './dues-config.entity';
 import { DuesPayment } from './dues-payment.entity';
 import { DuesPromotion } from './dues-promotion.entity';
 import { DuesPolicy } from './dues-policy.entity';
+import { ExtraordinaryIncome } from './extraordinary-income.entity';
+import { House } from '../houses/houses.entity';
 import { User } from '../users/users.entity';
 import { Role, ADMIN_ROLES } from '../auth/roles.enum';
 import { CreateDuesConfigDto } from './dto/create-dues-config.dto';
@@ -19,6 +21,8 @@ import { ImportPaymentItemDto } from './dto/import-payments.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { CreateDuesPolicyDto } from './dto/create-dues-policy.dto';
+import { CreateExtraordinaryDto } from './dto/create-extraordinary.dto';
+import { ApplyPromotionDto } from './dto/apply-promotion.dto';
 
 const EXEMPT_ROLES: Role[] = [
   Role.SUPER_ADMIN,
@@ -41,6 +45,10 @@ export class DuesService {
     private policyRepo: Repository<DuesPolicy>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(ExtraordinaryIncome)
+    private extraordinaryRepo: Repository<ExtraordinaryIncome>,
+    @InjectRepository(House)
+    private houseRepo: Repository<House>,
   ) {}
 
   async getConfig(): Promise<DuesConfig | null> {
@@ -328,6 +336,160 @@ export class DuesService {
   async setPolicy(dto: CreateDuesPolicyDto): Promise<DuesPolicy> {
     const policy = this.policyRepo.create(dto);
     return this.policyRepo.save(policy);
+  }
+
+  // ── Apply Promotion ──────────────────────────────────────────
+
+  async applyPromotion(
+    dto: ApplyPromotionDto,
+    requestingRole: Role,
+  ): Promise<{ applied: number }> {
+    if (![Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE].includes(requestingRole)) {
+      throw new ForbiddenException();
+    }
+
+    const promo = await this.promotionRepo.findOne({ where: { id: dto.promotionId } });
+    if (!promo) throw new NotFoundException(`Promoción ${dto.promotionId} no encontrada`);
+
+    const house = await this.houseRepo.findOne({ where: { id: dto.houseId } });
+    if (!house) throw new NotFoundException(`Casa ${dto.houseId} no encontrada`);
+
+    // Find users assigned to this house
+    const houseUsers = await this.userRepo.find({ where: { houseId: dto.houseId, isActive: true } });
+    if (!houseUsers.length) throw new NotFoundException('No hay usuarios activos en esta casa');
+
+    const config = await this.getConfig();
+    const baseAmount = config ? Number(config.amount) : 0;
+    const discountedAmount = baseAmount * (1 - promo.discountPercentage / 100);
+
+    const paidAt = dto.paidAt || new Date().toISOString().split('T')[0];
+    let applied = 0;
+
+    for (let i = 0; i < promo.monthCount; i++) {
+      let month = dto.startMonth + i;
+      let year = dto.startYear;
+      while (month > 12) {
+        month -= 12;
+        year += 1;
+      }
+
+      for (const user of houseUsers) {
+        if (EXEMPT_ROLES.includes(user.role)) continue;
+
+        const existing = await this.paymentRepo.findOne({
+          where: { userId: user.id, month, year },
+        });
+
+        if (existing) {
+          existing.status = 'paid';
+          existing.amount = discountedAmount;
+          existing.paidAt = paidAt;
+          existing.notes = `Promoción: ${promo.name}`;
+          await this.paymentRepo.save(existing);
+        } else {
+          const payment = new DuesPayment();
+          payment.userId = user.id;
+          payment.houseId = dto.houseId;
+          payment.month = month;
+          payment.year = year;
+          payment.amount = discountedAmount;
+          payment.status = 'paid';
+          payment.paidAt = paidAt;
+          payment.notes = `Promoción: ${promo.name}`;
+          await this.paymentRepo.save(payment);
+        }
+        applied++;
+      }
+    }
+
+    return { applied };
+  }
+
+  // ── Extraordinary Income ─────────────────────────────────────
+
+  async findAllExtraordinary(user: { userId: string; role: Role }): Promise<ExtraordinaryIncome[]> {
+    const isAdmin = [
+      Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
+    ].includes(user.role);
+
+    if (isAdmin) {
+      return this.extraordinaryRepo.find({
+        relations: ['house'],
+        order: { date: 'DESC' },
+      });
+    }
+
+    const userRecord = await this.userRepo.findOne({ where: { id: user.userId } });
+    if (userRecord?.houseId) {
+      return this.extraordinaryRepo.find({
+        where: { houseId: userRecord.houseId },
+        relations: ['house'],
+        order: { date: 'DESC' },
+      });
+    }
+    return [];
+  }
+
+  async createExtraordinary(
+    dto: CreateExtraordinaryDto,
+    createdById: string,
+  ): Promise<ExtraordinaryIncome> {
+    if (dto.houseId) {
+      const house = await this.houseRepo.findOne({ where: { id: dto.houseId } });
+      if (!house) throw new NotFoundException(`Casa ${dto.houseId} no encontrada`);
+    }
+    const record = this.extraordinaryRepo.create({ ...dto, createdById });
+    return this.extraordinaryRepo.save(record);
+  }
+
+  async updateExtraordinary(
+    id: string,
+    dto: Partial<CreateExtraordinaryDto>,
+  ): Promise<ExtraordinaryIncome> {
+    const record = await this.extraordinaryRepo.findOne({ where: { id } });
+    if (!record) throw new NotFoundException(`Ingreso extraordinario ${id} no encontrado`);
+    Object.assign(record, dto);
+    return this.extraordinaryRepo.save(record);
+  }
+
+  async deleteExtraordinary(id: string): Promise<void> {
+    const record = await this.extraordinaryRepo.findOne({ where: { id } });
+    if (!record) throw new NotFoundException(`Ingreso extraordinario ${id} no encontrado`);
+    await this.extraordinaryRepo.remove(record);
+  }
+
+  // ── House History ────────────────────────────────────────────
+
+  async getHouseHistory(
+    houseId: string,
+    user: { userId: string; role: Role },
+  ): Promise<{ payments: DuesPayment[]; extraordinary: ExtraordinaryIncome[] }> {
+    const isAdmin = [
+      Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
+    ].includes(user.role);
+
+    if (!isAdmin) {
+      const userRecord = await this.userRepo.findOne({ where: { id: user.userId } });
+      if (userRecord?.houseId !== houseId) {
+        throw new ForbiddenException('Solo puedes ver el historial de tu propia casa');
+      }
+    }
+
+    const house = await this.houseRepo.findOne({ where: { id: houseId } });
+    if (!house) throw new NotFoundException(`Casa ${houseId} no encontrada`);
+
+    const payments = await this.paymentRepo.find({
+      where: { houseId },
+      relations: ['user'],
+      order: { year: 'DESC', month: 'DESC' },
+    });
+
+    const extraordinary = await this.extraordinaryRepo.find({
+      where: { houseId },
+      order: { date: 'DESC' },
+    });
+
+    return { payments, extraordinary };
   }
 
   async getDebtors() {
