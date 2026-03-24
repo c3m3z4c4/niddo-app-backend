@@ -17,6 +17,8 @@ import { ProjectsModule } from './projects/projects.module';
 import { RsvpsModule } from './rsvps/rsvps.module';
 import { BackupModule } from './backup/backup.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { MessagesModule } from './messages/messages.module';
+import { UserSettingsModule } from './user-settings/user-settings.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { ReservationsModule } from './reservations/reservations.module';
     RsvpsModule,
     BackupModule,
     ReservationsModule,
+    MessagesModule,
+    UserSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

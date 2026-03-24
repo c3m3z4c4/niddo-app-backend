@@ -12,6 +12,7 @@ import { House } from '../houses/houses.entity';
 import { Role, UNIQUE_ROLES } from '../auth/roles.enum';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ImportUserDto } from './dto/import-user.dto';
 
 @Injectable()
@@ -205,6 +206,34 @@ export class UsersService {
     }
 
     return { created, updated, skipped, skippedEmails };
+  }
+
+  async getMe(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['houses'],
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return this.sanitize(user);
+  }
+
+  async updateMe(id: string, dto: UpdateProfileDto) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (dto.password) {
+      dto.password = await bcrypt.hash(dto.password, 10);
+    }
+    Object.assign(user, dto);
+    const saved = await this.usersRepository.save(user);
+    return this.sanitize(saved);
+  }
+
+  async updateAvatar(id: string, filename: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    user.avatarUrl = `/uploads/avatars/${filename}`;
+    const saved = await this.usersRepository.save(user);
+    return { avatarUrl: saved.avatarUrl };
   }
 
   // Used internally for seeding
