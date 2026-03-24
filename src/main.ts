@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
 
@@ -41,6 +42,20 @@ async function bootstrap() {
     'vecino@privadasdelparque.com',
     'Vecino2025!',
   );
+
+  // One-time migration: populate house_residents join table from users.houseId
+  try {
+    const dataSource = app.get(DataSource);
+    await dataSource.query(`
+      INSERT INTO house_residents ("houseId", "userId")
+      SELECT "houseId", id FROM users
+      WHERE "houseId" IS NOT NULL
+      ON CONFLICT DO NOTHING
+    `);
+    console.log('✅ house_residents migrated from users.houseId');
+  } catch (e) {
+    console.warn('⚠️  house_residents migration skipped:', e.message);
+  }
 
   await app.listen(3000, '0.0.0.0');
   console.log(`✅ Backend running on http://0.0.0.0:3000`);
