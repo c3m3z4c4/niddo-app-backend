@@ -46,10 +46,19 @@ async function bootstrap() {
   // One-time migration: populate house_residents join table from users.houseId
   try {
     const dataSource = app.get(DataSource);
+    // Remove any ADMIN/SUPER_ADMIN that got into house_residents by mistake
+    await dataSource.query(`
+      DELETE FROM house_residents
+      WHERE "userId" IN (
+        SELECT id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN')
+      )
+    `);
+    // Migrate VECINO residents from users.houseId into the join table
     await dataSource.query(`
       INSERT INTO house_residents ("houseId", "userId")
       SELECT "houseId", id FROM users
       WHERE "houseId" IS NOT NULL
+        AND role = 'VECINO'
       ON CONFLICT DO NOTHING
     `);
     console.log('✅ house_residents migrated from users.houseId');
