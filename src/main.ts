@@ -58,7 +58,7 @@ async function bootstrap() {
       INSERT INTO house_residents ("houseId", "userId")
       SELECT "houseId", id FROM users
       WHERE "houseId" IS NOT NULL
-        AND role = 'VECINO'
+        AND role NOT IN ('ADMIN', 'SUPER_ADMIN')
       ON CONFLICT DO NOTHING
     `);
     console.log('✅ house_residents migrated from users.houseId');
