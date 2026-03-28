@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { User, House, Meeting, GreenAreaEvent } from '@/types';
+import { User, House, Meeting, GreenAreaEvent, Rsvp, RsvpStatus } from '@/types';
 
 // ── Users ───────────────────────────────────────────────────────────────────
 export function useUsersQuery() {
@@ -141,5 +141,41 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/events/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['events'] }),
+  });
+}
+
+// ── RSVPs ────────────────────────────────────────────────────────────────────
+/** Returns all RSVPs for the current user */
+export function useMyRsvpsQuery() {
+  return useQuery<Rsvp[]>({
+    queryKey: ['my-rsvps'],
+    queryFn: () => api.get<Rsvp[]>('/rsvps').then(r => r.data),
+  });
+}
+
+/** Returns RSVP counts for a specific target (admin use) */
+export function useRsvpAttendanceQuery(targetType: string, targetId: string) {
+  return useQuery<Rsvp[]>({
+    queryKey: ['rsvp-attendance', targetType, targetId],
+    queryFn: () => api.get<Rsvp[]>(`/rsvps/${targetType}/${targetId}/attendance`).then(r => r.data),
+    enabled: !!targetId,
+  });
+}
+
+export function useUpsertRsvp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { targetType: string; targetId: string; status: RsvpStatus }) =>
+      api.post<Rsvp>('/rsvps', data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-rsvps'] }),
+  });
+}
+
+export function useRemoveRsvp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ targetType, targetId }: { targetType: string; targetId: string }) =>
+      api.delete(`/rsvps/${targetType}/${targetId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-rsvps'] }),
   });
 }

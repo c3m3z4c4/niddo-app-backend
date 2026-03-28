@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useRsvps } from '@/hooks/useDataStore';
+import { useMyRsvpsQuery, useUpsertRsvp, useRemoveRsvp, useRsvpAttendanceQuery } from '@/hooks/useApi';
 import { RsvpStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Check, X, HelpCircle, Users } from 'lucide-react';
@@ -20,20 +20,22 @@ const statusConfig: Record<RsvpStatus, { label: string; icon: typeof Check; acti
 
 export function RsvpButtons({ targetType, targetId, compact = false }: RsvpButtonsProps) {
   const { user } = useAuth();
-  const { setRsvp, removeRsvp, getUserRsvp, getAttendingCount } = useRsvps();
+  const { data: myRsvps = [] } = useMyRsvpsQuery();
+  const upsertRsvp = useUpsertRsvp();
+  const removeRsvp = useRemoveRsvp();
   const { toast } = useToast();
 
   if (!user) return null;
 
-  const currentRsvp = getUserRsvp(user.id, targetType, targetId);
-  const attendingCount = getAttendingCount(targetType, targetId);
+  const currentRsvp = myRsvps.find(r => r.targetType === targetType && r.targetId === targetId);
+  const attendingCount = myRsvps.filter(r => r.targetType === targetType && r.targetId === targetId && r.status === 'attending').length;
 
   const handleRsvp = (status: RsvpStatus) => {
     if (currentRsvp?.status === status) {
-      removeRsvp(user.id, targetType, targetId);
+      removeRsvp.mutate({ targetType, targetId });
       toast({ title: 'Respuesta eliminada', description: 'Se eliminó tu confirmación.' });
     } else {
-      setRsvp(user.id, user.name, targetType, targetId, status);
+      upsertRsvp.mutate({ targetType, targetId, status });
       const labels: Record<RsvpStatus, string> = {
         attending: 'Confirmaste tu asistencia',
         maybe: 'Respondiste "Tal vez"',
@@ -83,8 +85,7 @@ interface RsvpBadgeProps {
 }
 
 export function RsvpCount({ targetType, targetId }: RsvpBadgeProps) {
-  const { getRsvpsForTarget } = useRsvps();
-  const rsvps = getRsvpsForTarget(targetType, targetId);
+  const { data: rsvps = [] } = useRsvpAttendanceQuery(targetType, targetId);
   const attending = rsvps.filter(r => r.status === 'attending').length;
   const maybe = rsvps.filter(r => r.status === 'maybe').length;
   const notAttending = rsvps.filter(r => r.status === 'not_attending').length;

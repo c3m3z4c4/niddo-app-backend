@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
 import { useMeetingsQuery, useEventsQuery, useHousesQuery, useUsersQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,8 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, TreePine, Home, Users, Shield, TrendingUp, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { ADMIN_ROLES } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role === 'PLATFORM_ADMIN') {
+      navigate('/admin/platform', { replace: true });
+    }
+  }, [user, navigate]);
+
   const { data: meetings = [] } = useMeetingsQuery();
   const { data: events = [] } = useEventsQuery();
   const { data: houses = [] } = useHousesQuery();

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useMeetings, useEvents } from '@/hooks/useDataStore';
+import { useMeetingsQuery, useEventsQuery } from '@/hooks/useApi';
 import { Meeting, GreenAreaEvent } from '@/types';
 import { isAfter, parseISO, differenceInHours, format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,8 +31,8 @@ function saveReadIds(ids: Set<string>) {
 }
 
 export function useNotifications() {
-  const { meetings } = useMeetings();
-  const { events } = useEvents();
+  const { data: meetings = [] } = useMeetingsQuery();
+  const { data: events = [] } = useEventsQuery();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
@@ -53,7 +53,7 @@ export function useNotifications() {
           id,
           type: 'meeting',
           title: m.title,
-          message: `${format(meetingDate, "d 'de' MMMM", { locale: es })} a las ${m.time} hrs — ${m.location}`,
+          message: `${format(meetingDate, "d 'de' MMMM", { locale: es })} a las ${m.startTime} hrs — ${m.location}`,
           date: m.date,
           read: readIds.has(id),
           createdAt: meetingDate.getTime(),
@@ -70,7 +70,7 @@ export function useNotifications() {
           id,
           type: 'event',
           title: e.title,
-          message: `${format(eventDate, "d 'de' MMMM", { locale: es })} a las ${e.time} hrs — ${e.greenArea}`,
+          message: `${format(eventDate, "d 'de' MMMM", { locale: es })} a las ${e.startTime} hrs — ${e.greenArea}`,
           date: e.date,
           read: readIds.has(id),
           createdAt: eventDate.getTime(),

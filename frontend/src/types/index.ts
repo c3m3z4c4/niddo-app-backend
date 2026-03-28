@@ -134,6 +134,9 @@ export interface Condominium {
   contactEmail?: string;
   phone?: string;
   status: 'active' | 'suspended' | 'trial' | 'cancelled';
+  trialEndsAt?: string | null;
+  maxHouses?: number | null;
+  maxUsers?: number | null;
   branding: CondominiumBranding;
   createdAt: string;
 }

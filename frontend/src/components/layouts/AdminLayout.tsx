@@ -32,11 +32,12 @@ import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/NotificationBell';
 
 const adminLinks = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/admin/reuniones', label: 'Reuniones', icon: Calendar },
-  { to: '/admin/eventos', label: 'Eventos', icon: TreePine },
-  { to: '/admin/casas', label: 'Casas', icon: HomeIcon },
-  { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: null },
+  { to: '/admin/condominios', label: 'Condominios', icon: Building2, roles: ['PLATFORM_ADMIN'] },
+  { to: '/admin/reuniones', label: 'Reuniones', icon: Calendar, roles: null },
+  { to: '/admin/eventos', label: 'Eventos', icon: TreePine, roles: null },
+  { to: '/admin/casas', label: 'Casas', icon: HomeIcon, roles: null },
+  { to: '/admin/usuarios', label: 'Usuarios', icon: Users, roles: null },
 ];
 
 function CondoSelector({ collapsed = false }: { collapsed?: boolean }) {
@@ -95,6 +96,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const visibleLinks = adminLinks.filter(l => !l.roles || l.roles.includes(user?.role ?? ''));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -145,7 +147,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <CondoSelector />
         </div>
         <nav className="flex flex-col gap-1 p-4">
-          {adminLinks.map(link => {
+          {visibleLinks.map(link => {
             const Icon = link.icon;
             const isActive = location.pathname === link.to;
             return (
@@ -225,7 +227,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex flex-col gap-1 p-4">
-            {adminLinks.map(link => {
+            {visibleLinks.map(link => {
               const Icon = link.icon;
               const isActive = location.pathname === link.to;
               return (

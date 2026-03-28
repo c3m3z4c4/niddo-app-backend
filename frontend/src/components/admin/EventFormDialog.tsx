@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GreenAreaEvent } from '@/types';
-import { greenAreas } from '@/data/mockData';
+const greenAreas = ['Jardín Central', 'Área de Convivencia Norte', 'Área de Convivencia Sur', 'Explanada Principal', 'Parque Infantil', 'Zona de Asadores'];
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
