@@ -4,7 +4,7 @@ import { EventFormDialog } from '@/components/admin/EventFormDialog';
 import { DeleteEventDialog } from '@/components/admin/DeleteEventDialog';
 import { TablePagination, paginate } from '@/components/admin/TablePagination';
 import { exportToCSV } from '@/lib/exportCSV';
-import { useEvents } from '@/hooks/useDataStore';
+import { useEventsQuery, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/useApi';
 import { GreenAreaEvent } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,7 +22,10 @@ import { greenAreas } from '@/data/mockData';
 import { RsvpCount } from '@/components/RsvpButtons';
 
 export default function AdminEvents() {
-  const { events, isLoading, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { data: events = [], isLoading } = useEventsQuery();
+  const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
+  const deleteEvent = useDeleteEvent();
   const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -38,22 +41,31 @@ export default function AdminEvents() {
   const handleEdit = (ev: GreenAreaEvent) => { setSelectedEvent(ev); setFormOpen(true); };
   const handleDelete = (ev: GreenAreaEvent) => { setSelectedEvent(ev); setDeleteOpen(true); };
 
-  const handleFormSubmit = (data: Omit<GreenAreaEvent, 'id' | 'createdAt'>) => {
-    if (selectedEvent) {
-      updateEvent(selectedEvent.id, data);
-      toast({ title: 'Evento actualizado', description: `"${data.title}" se actualizó correctamente.` });
-    } else {
-      addEvent(data);
-      toast({ title: 'Evento creado', description: `"${data.title}" se creó correctamente.` });
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
+    try {
+      if (selectedEvent) {
+        await updateEvent.mutateAsync({ id: selectedEvent.id, data });
+        toast({ title: 'Evento actualizado', description: `"${data.title}" se actualizó correctamente.` });
+      } else {
+        await createEvent.mutateAsync(data as Parameters<typeof createEvent.mutateAsync>[0]);
+        toast({ title: 'Evento creado', description: `"${data.title}" se creó correctamente.` });
+      }
+      setFormOpen(false);
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo guardar el evento.', variant: 'destructive' });
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedEvent) {
-      deleteEvent(selectedEvent.id);
-      toast({ title: 'Evento eliminado', description: `"${selectedEvent.title}" fue eliminado.`, variant: 'destructive' });
-      setDeleteOpen(false);
-      setSelectedEvent(null);
+      try {
+        await deleteEvent.mutateAsync(selectedEvent.id);
+        toast({ title: 'Evento eliminado', description: `"${selectedEvent.title}" fue eliminado.`, variant: 'destructive' });
+        setDeleteOpen(false);
+        setSelectedEvent(null);
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo eliminar el evento.', variant: 'destructive' });
+      }
     }
   };
 
@@ -93,7 +105,7 @@ export default function AdminEvents() {
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2" onClick={() => exportToCSV(filtered, [
               { key: 'title', header: 'Título' }, { key: 'greenArea', header: 'Área Verde' },
-              { key: 'date', header: 'Fecha' }, { key: 'time', header: 'Hora' },
+              { key: 'date', header: 'Fecha' }, { key: 'startTime', header: 'Hora' },
               { key: 'description', header: 'Descripción' },
             ], 'eventos')} disabled={filtered.length === 0}>
               <Download className="h-4 w-4" /> CSV
@@ -182,7 +194,7 @@ export default function AdminEvents() {
                             </TableCell>
                             <TableCell className="whitespace-nowrap">
                               <span className="flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />{ev.time}
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />{ev.startTime}
                               </span>
                             </TableCell>
                             <TableCell>

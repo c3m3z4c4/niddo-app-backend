@@ -27,7 +27,7 @@ const eventSchema = z.object({
   title: z.string().trim().min(1, 'El título es obligatorio').max(200),
   greenArea: z.string().min(1, 'Selecciona un área verde'),
   date: z.date({ required_error: 'La fecha es obligatoria' }),
-  time: z.string().min(1, 'La hora es obligatoria'),
+  startTime: z.string().min(1, 'La hora es obligatoria'),
   description: z.string().trim().max(1000).optional(),
 });
 
@@ -37,7 +37,7 @@ interface EventFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event?: GreenAreaEvent | null;
-  onSubmit: (data: Omit<GreenAreaEvent, 'id' | 'createdAt'>) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
 }
 
 export function EventFormDialog({ open, onOpenChange, event, onSubmit }: EventFormDialogProps) {
@@ -50,10 +50,10 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit }: EventFo
           title: event.title,
           greenArea: event.greenArea,
           date: new Date(event.date + 'T12:00:00'),
-          time: event.time,
+          startTime: event.startTime,
           description: event.description || '',
         }
-      : { title: '', greenArea: '', time: '', description: '' },
+      : { title: '', greenArea: '', startTime: '', description: '' },
   });
 
   const handleSubmit = (values: EventFormValues) => {
@@ -61,9 +61,8 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit }: EventFo
       title: values.title,
       greenArea: values.greenArea,
       date: format(values.date, 'yyyy-MM-dd'),
-      time: values.time,
+      startTime: values.startTime,
       description: values.description || '',
-      createdBy: '1',
     });
     form.reset();
     onOpenChange(false);
@@ -160,7 +159,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSubmit }: EventFo
 
               <FormField
                 control={form.control}
-                name="time"
+                name="startTime"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Hora</FormLabel>

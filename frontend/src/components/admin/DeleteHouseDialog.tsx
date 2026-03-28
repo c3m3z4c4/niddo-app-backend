@@ -18,7 +18,7 @@ export function DeleteHouseDialog({ open, onOpenChange, house, onConfirm }: Dele
         <AlertDialogHeader>
           <AlertDialogTitle className="font-serif">¿Eliminar casa?</AlertDialogTitle>
           <AlertDialogDescription>
-            Estás a punto de eliminar la casa <strong>{house?.houseNumber}</strong> (Responsable: {house?.responsibleName}). Esta acción no se puede deshacer.
+            Estás a punto de eliminar la casa <strong>{house?.houseNumber}</strong>. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

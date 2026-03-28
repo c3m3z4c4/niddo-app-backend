@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Meeting } from '@/types';
@@ -36,7 +34,7 @@ import {
 const meetingSchema = z.object({
   title: z.string().trim().min(1, 'El título es obligatorio').max(200, 'Máximo 200 caracteres'),
   date: z.date({ required_error: 'La fecha es obligatoria' }),
-  time: z.string().min(1, 'La hora es obligatoria'),
+  startTime: z.string().min(1, 'La hora es obligatoria'),
   location: z.string().trim().min(1, 'La ubicación es obligatoria').max(200, 'Máximo 200 caracteres'),
   description: z.string().trim().max(1000, 'Máximo 1000 caracteres').optional(),
 });
@@ -47,7 +45,7 @@ interface MeetingFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   meeting?: Meeting | null;
-  onSubmit: (data: Omit<Meeting, 'id' | 'createdAt'>) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
 }
 
 export function MeetingFormDialog({ open, onOpenChange, meeting, onSubmit }: MeetingFormDialogProps) {
@@ -59,13 +57,13 @@ export function MeetingFormDialog({ open, onOpenChange, meeting, onSubmit }: Mee
       ? {
           title: meeting.title,
           date: new Date(meeting.date + 'T12:00:00'),
-          time: meeting.time,
+          startTime: meeting.startTime,
           location: meeting.location,
           description: meeting.description || '',
         }
       : {
           title: '',
-          time: '',
+          startTime: '',
           location: '',
           description: '',
         },
@@ -75,10 +73,9 @@ export function MeetingFormDialog({ open, onOpenChange, meeting, onSubmit }: Mee
     onSubmit({
       title: values.title,
       date: format(values.date, 'yyyy-MM-dd'),
-      time: values.time,
+      startTime: values.startTime,
       location: values.location,
       description: values.description || '',
-      createdBy: '1',
     });
     form.reset();
     onOpenChange(false);
@@ -150,7 +147,7 @@ export function MeetingFormDialog({ open, onOpenChange, meeting, onSubmit }: Mee
 
               <FormField
                 control={form.control}
-                name="time"
+                name="startTime"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Hora</FormLabel>

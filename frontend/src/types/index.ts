@@ -32,9 +32,10 @@ export interface User {
 export interface House {
   id: string;
   houseNumber: string;
-  responsibleName?: string;
-  responsibleUserId?: string;
+  address?: string;
   status: 'active' | 'inactive';
+  type?: 'terreno' | 'en_construccion' | 'casa';
+  residents?: User[];
   createdAt: string;
   condominiumId?: string | null;
 }
@@ -42,24 +43,32 @@ export interface House {
 export interface Meeting {
   id: string;
   title: string;
-  date: string;
-  time: string;
+  description?: string;
   location: string;
-  description: string;
+  date: string;         // YYYY-MM-DD
+  startTime: string;    // HH:MM
+  endTime?: string;
+  status: 'active' | 'cancelled' | 'postponed';
+  minutes?: string;
+  minutesAgreements?: string;
+  minutesResponsibles?: string;
+  minutesClosingTime?: string;
+  createdById?: string;
   createdAt: string;
-  createdBy: string;
   condominiumId?: string | null;
 }
 
 export interface GreenAreaEvent {
   id: string;
   title: string;
+  description?: string;
   greenArea: string;
-  date: string;
-  time: string;
-  description: string;
+  date: string;         // YYYY-MM-DD
+  startTime: string;    // HH:MM
+  endTime?: string;
+  status: 'active' | 'cancelled' | 'postponed';
+  createdById?: string;
   createdAt: string;
-  createdBy: string;
   condominiumId?: string | null;
 }
 

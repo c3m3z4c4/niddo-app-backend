@@ -16,8 +16,10 @@ import {
 
 const userSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio').max(200),
+  lastName: z.string().trim().min(1, 'El apellido es obligatorio').max(200),
   email: z.string().trim().email('Email inválido').max(255),
-  role: z.enum(['ADMIN', 'VECINO'], { required_error: 'Selecciona un rol' }),
+  password: z.string().min(6, 'Mínimo 6 caracteres').optional().or(z.literal('')),
+  role: z.enum(['RESIDENT', 'CONDO_ADMIN', 'PRESIDENTE', 'SECRETARIO', 'TESORERO'], { required_error: 'Selecciona un rol' }),
   houseId: z.string().optional(),
 });
 
@@ -27,7 +29,7 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: User | null;
-  onSubmit: (data: Omit<User, 'id'>) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
   houses: { id: string; houseNumber: string }[];
 }
 
@@ -37,21 +39,32 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit, houses }: U
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: user
-      ? { name: user.name, email: user.email, role: user.role, houseId: user.houseId || '' }
-      : { name: '', email: '', role: 'VECINO', houseId: '' },
+      ? {
+          name: user.name,
+          lastName: user.lastName,
+          email: user.email,
+          password: '',
+          role: (user.role === 'PLATFORM_ADMIN' ? 'CONDO_ADMIN' : user.role) as UserFormValues['role'],
+          houseId: user.houseId || '',
+        }
+      : { name: '', lastName: '', email: '', password: '', role: 'RESIDENT', houseId: '' },
   });
 
   const role = form.watch('role');
 
   const handleSubmit = (values: UserFormValues) => {
-    onSubmit({
+    const payload: Record<string, unknown> = {
       name: values.name,
+      lastName: values.lastName,
       email: values.email,
       role: values.role,
-      houseId: values.role === 'VECINO' ? values.houseId || undefined : undefined,
-    });
+      houseId: values.role === 'RESIDENT' ? values.houseId || undefined : undefined,
+    };
+    if (values.password) {
+      payload.password = values.password;
+    }
+    onSubmit(payload);
     form.reset();
-    onOpenChange(false);
   };
 
   return (
@@ -67,19 +80,34 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit, houses }: U
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ej: Juan Pérez García" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Juan" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apellido</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Pérez" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -89,6 +117,20 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit, houses }: U
                   <FormLabel>Correo electrónico</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="correo@ejemplo.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isEditing ? 'Nueva contraseña (opcional)' : 'Contraseña'}</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,8 +150,11 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit, houses }: U
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="VECINO">Vecino</SelectItem>
-                      <SelectItem value="ADMIN">Administrador</SelectItem>
+                      <SelectItem value="RESIDENT">Vecino</SelectItem>
+                      <SelectItem value="CONDO_ADMIN">Administrador</SelectItem>
+                      <SelectItem value="PRESIDENTE">Presidente</SelectItem>
+                      <SelectItem value="SECRETARIO">Secretario</SelectItem>
+                      <SelectItem value="TESORERO">Tesorero</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -117,7 +162,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit, houses }: U
               )}
             />
 
-            {role === 'VECINO' && (
+            {role === 'RESIDENT' && (
               <FormField
                 control={form.control}
                 name="houseId"

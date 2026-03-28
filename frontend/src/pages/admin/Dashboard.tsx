@@ -1,22 +1,23 @@
 import { AdminLayout } from '@/components/layouts/AdminLayout';
-import { useMeetings, useEvents, useHouses, useUsers } from '@/hooks/useDataStore';
+import { useMeetingsQuery, useEventsQuery, useHousesQuery, useUsersQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, TreePine, Home, Users, Shield, TrendingUp, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { ADMIN_ROLES } from '@/types';
 
 export default function AdminDashboard() {
-  const { meetings } = useMeetings();
-  const { events } = useEvents();
-  const { houses } = useHouses();
-  const { users } = useUsers();
+  const { data: meetings = [] } = useMeetingsQuery();
+  const { data: events = [] } = useEventsQuery();
+  const { data: houses = [] } = useHousesQuery();
+  const { data: users = [] } = useUsersQuery();
 
   const today = new Date().toISOString().split('T')[0];
   const upcomingMeetings = meetings.filter(m => m.date >= today);
   const upcomingEvents = events.filter(e => e.date >= today);
   const activeHouses = houses.filter(h => h.status === 'active');
-  const admins = users.filter(u => u.role === 'ADMIN');
-  const vecinos = users.filter(u => u.role === 'VECINO');
+  const admins = users.filter(u => ADMIN_ROLES.includes(u.role));
+  const vecinos = users.filter(u => u.role === 'RESIDENT');
 
   const stats = [
     { label: 'Reuniones', value: meetings.length, sub: `${upcomingMeetings.length} próximas`, icon: Calendar, color: 'text-primary' },
@@ -47,8 +48,8 @@ export default function AdminDashboard() {
 
   // Upcoming items sorted by date
   const upcoming = [
-    ...upcomingMeetings.map(m => ({ type: 'Reunión' as const, title: m.title, date: m.date, time: m.time })),
-    ...upcomingEvents.map(e => ({ type: 'Evento' as const, title: e.title, date: e.date, time: e.time })),
+    ...upcomingMeetings.map(m => ({ type: 'Reunión' as const, title: m.title, date: m.date, time: m.startTime })),
+    ...upcomingEvents.map(e => ({ type: 'Evento' as const, title: e.title, date: e.date, time: e.startTime })),
   ].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).slice(0, 5);
 
   // Green area usage

@@ -4,8 +4,9 @@ import { UserFormDialog } from '@/components/admin/UserFormDialog';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { TablePagination, paginate } from '@/components/admin/TablePagination';
 import { exportToCSV } from '@/lib/exportCSV';
-import { useUsers, useHouses } from '@/hooks/useDataStore';
+import { useUsersQuery, useCreateUser, useUpdateUser, useDeleteUser, useHousesQuery } from '@/hooks/useApi';
 import { User } from '@/types';
+import { ADMIN_ROLES } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,15 +19,18 @@ import { Plus, Pencil, Trash2, Users as UsersIcon, Loader2, Shield, Home, Search
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminUsers() {
-  const { users, isLoading, addUser, updateUser, deleteUser } = useUsers();
-  const { houses } = useHouses();
+  const { data: users = [], isLoading } = useUsersQuery();
+  const { data: houses = [] } = useHousesQuery();
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
   const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'ADMIN' | 'VECINO'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'RESIDENT' | 'CONDO_ADMIN'>('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -34,35 +38,48 @@ export default function AdminUsers() {
   const handleEdit = (u: User) => { setSelectedUser(u); setFormOpen(true); };
   const handleDelete = (u: User) => { setSelectedUser(u); setDeleteOpen(true); };
 
-  const handleFormSubmit = (data: Omit<User, 'id'>) => {
-    if (selectedUser) {
-      updateUser(selectedUser.id, data);
-      toast({ title: 'Usuario actualizado', description: `"${data.name}" se actualizó correctamente.` });
-    } else {
-      addUser(data);
-      toast({ title: 'Usuario creado', description: `"${data.name}" se creó correctamente.` });
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
+    try {
+      if (selectedUser) {
+        await updateUser.mutateAsync({ id: selectedUser.id, data });
+        toast({ title: 'Usuario actualizado', description: `"${data.name}" se actualizó correctamente.` });
+      } else {
+        await createUser.mutateAsync(data as Parameters<typeof createUser.mutateAsync>[0]);
+        toast({ title: 'Usuario creado', description: `"${data.name}" se creó correctamente.` });
+      }
+      setFormOpen(false);
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo guardar el usuario.', variant: 'destructive' });
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedUser) {
-      deleteUser(selectedUser.id);
-      toast({ title: 'Usuario eliminado', description: `"${selectedUser.name}" fue eliminado.`, variant: 'destructive' });
-      setDeleteOpen(false);
-      setSelectedUser(null);
+      try {
+        await deleteUser.mutateAsync(selectedUser.id);
+        toast({ title: 'Usuario eliminado', description: `"${selectedUser.name}" fue eliminado.`, variant: 'destructive' });
+        setDeleteOpen(false);
+        setSelectedUser(null);
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo eliminar el usuario.', variant: 'destructive' });
+      }
     }
   };
 
-  const getHouseNumber = (houseId?: string) => {
+  const getHouseNumber = (houseId?: string | null) => {
     if (!houseId) return '—';
     return houses.find(h => h.id === houseId)?.houseNumber || '—';
   };
 
+  const isAdmin = (u: User) => ADMIN_ROLES.includes(u.role);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return users.filter(u => {
-      if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
-      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      const fullName = `${u.name} ${u.lastName}`.toLowerCase();
+      if (q && !fullName.includes(q) && !u.email.toLowerCase().includes(q)) return false;
+      if (roleFilter === 'RESIDENT' && u.role !== 'RESIDENT') return false;
+      if (roleFilter === 'CONDO_ADMIN' && !isAdmin(u)) return false;
       return true;
     });
   }, [users, search, roleFilter]);
@@ -89,8 +106,8 @@ export default function AdminUsers() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2" onClick={() => exportToCSV(filtered, [
-              { key: 'name', header: 'Nombre' }, { key: 'email', header: 'Email' },
-              { key: 'role', header: 'Rol' },
+              { key: 'name', header: 'Nombre' }, { key: 'lastName', header: 'Apellido' },
+              { key: 'email', header: 'Email' }, { key: 'role', header: 'Rol' },
             ], 'usuarios')} disabled={filtered.length === 0}>
               <Download className="h-4 w-4" /> CSV
             </Button>
@@ -112,8 +129,8 @@ export default function AdminUsers() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los roles</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="VECINO">Vecino</SelectItem>
+              <SelectItem value="CONDO_ADMIN">Admin</SelectItem>
+              <SelectItem value="RESIDENT">Vecino</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -150,12 +167,12 @@ export default function AdminUsers() {
                     <TableBody>
                       {paginate(filtered, page, pageSize).map((u) => (
                         <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.name}</TableCell>
+                          <TableCell className="font-medium">{u.name} {u.lastName}</TableCell>
                           <TableCell className="text-muted-foreground">{u.email}</TableCell>
                           <TableCell>
-                            <Badge variant={u.role === 'ADMIN' ? 'default' : 'secondary'} className="gap-1">
-                              {u.role === 'ADMIN' ? <Shield className="h-3 w-3" /> : <Home className="h-3 w-3" />}
-                              {u.role === 'ADMIN' ? 'Admin' : 'Vecino'}
+                            <Badge variant={isAdmin(u) ? 'default' : 'secondary'} className="gap-1">
+                              {isAdmin(u) ? <Shield className="h-3 w-3" /> : <Home className="h-3 w-3" />}
+                              {isAdmin(u) ? 'Admin' : 'Vecino'}
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">{getHouseNumber(u.houseId)}</TableCell>

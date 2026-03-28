@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Home, Search, Download } from 'lucide-react';
-import { useHouses } from '@/hooks/useDataStore';
+import { useHousesQuery, useCreateHouse, useUpdateHouse, useDeleteHouse } from '@/hooks/useApi';
 import { House } from '@/types';
 import { HouseFormDialog } from '@/components/admin/HouseFormDialog';
 import { DeleteHouseDialog } from '@/components/admin/DeleteHouseDialog';
@@ -16,7 +16,10 @@ import { exportToCSV } from '@/lib/exportCSV';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminHouses() {
-  const { houses, isLoading, addHouse, updateHouse, deleteHouse } = useHouses();
+  const { data: houses = [], isLoading } = useHousesQuery();
+  const createHouse = useCreateHouse();
+  const updateHouse = useUpdateHouse();
+  const deleteHouse = useDeleteHouse();
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -30,29 +33,42 @@ export default function AdminHouses() {
   const handleEdit = (house: House) => { setSelectedHouse(house); setFormOpen(true); };
   const handleDeleteClick = (house: House) => { setSelectedHouse(house); setDeleteOpen(true); };
 
-  const handleSubmit = (data: Omit<House, 'id' | 'createdAt'>) => {
-    if (selectedHouse) {
-      updateHouse(selectedHouse.id, data);
-      toast({ title: 'Casa actualizada', description: `Casa ${data.houseNumber} actualizada correctamente.` });
-    } else {
-      addHouse(data);
-      toast({ title: 'Casa creada', description: `Casa ${data.houseNumber} registrada correctamente.` });
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    try {
+      if (selectedHouse) {
+        await updateHouse.mutateAsync({ id: selectedHouse.id, data });
+        toast({ title: 'Casa actualizada', description: `Casa ${data.houseNumber} actualizada correctamente.` });
+      } else {
+        await createHouse.mutateAsync(data as Parameters<typeof createHouse.mutateAsync>[0]);
+        toast({ title: 'Casa creada', description: `Casa ${data.houseNumber} registrada correctamente.` });
+      }
+      setFormOpen(false);
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo guardar la casa.', variant: 'destructive' });
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedHouse) {
-      deleteHouse(selectedHouse.id);
-      toast({ title: 'Casa eliminada', description: `Casa ${selectedHouse.houseNumber} eliminada.`, variant: 'destructive' });
-      setDeleteOpen(false);
+      try {
+        await deleteHouse.mutateAsync(selectedHouse.id);
+        toast({ title: 'Casa eliminada', description: `Casa ${selectedHouse.houseNumber} eliminada.`, variant: 'destructive' });
+        setDeleteOpen(false);
+        setSelectedHouse(null);
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo eliminar la casa.', variant: 'destructive' });
+      }
     }
   };
+
+  const getResidentsDisplay = (house: House) =>
+    house.residents?.map(r => `${r.name} ${r.lastName}`).join(', ') || '—';
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return [...houses]
       .filter(h => {
-        if (q && !h.houseNumber.toLowerCase().includes(q) && !h.responsibleName.toLowerCase().includes(q)) return false;
+        if (q && !h.houseNumber.toLowerCase().includes(q)) return false;
         if (statusFilter !== 'all' && h.status !== statusFilter) return false;
         return true;
       })
@@ -71,7 +87,7 @@ export default function AdminHouses() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2" onClick={() => exportToCSV(filtered, [
-              { key: 'houseNumber', header: 'Número' }, { key: 'responsibleName', header: 'Responsable' },
+              { key: 'houseNumber', header: 'Número' },
               { key: 'status', header: 'Estado' }, { key: 'createdAt', header: 'Registro' },
             ], 'casas')} disabled={filtered.length === 0}>
               <Download className="h-4 w-4" /> CSV
@@ -84,7 +100,7 @@ export default function AdminHouses() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por número o responsable..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar por número..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
             <SelectTrigger className="w-full sm:w-[160px]">
@@ -120,7 +136,7 @@ export default function AdminHouses() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Número</TableHead>
-                      <TableHead>Responsable</TableHead>
+                      <TableHead>Residentes</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Registro</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
@@ -130,7 +146,7 @@ export default function AdminHouses() {
                     {paginate(filtered, page, pageSize).map(house => (
                       <TableRow key={house.id}>
                         <TableCell className="font-medium">{house.houseNumber}</TableCell>
-                        <TableCell>{house.responsibleName}</TableCell>
+                        <TableCell className="text-muted-foreground">{getResidentsDisplay(house)}</TableCell>
                         <TableCell>
                           <Badge variant={house.status === 'active' ? 'default' : 'secondary'}>
                             {house.status === 'active' ? 'Activa' : 'Inactiva'}

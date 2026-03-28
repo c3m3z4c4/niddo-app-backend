@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { House } from '@/types';
-import { useUsers } from '@/hooks/useDataStore';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -14,9 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const houseSchema = z.object({
   houseNumber: z.string().min(1, 'El número de casa es requerido'),
-  responsibleName: z.string().min(1, 'El nombre del responsable es requerido'),
-  responsibleUserId: z.string().optional(),
   status: z.enum(['active', 'inactive']),
+  type: z.enum(['terreno', 'en_construccion', 'casa']).optional(),
 });
 
 type HouseFormValues = z.infer<typeof houseSchema>;
@@ -25,20 +23,16 @@ interface HouseFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   house: House | null;
-  onSubmit: (data: HouseFormValues) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
 }
 
 export function HouseFormDialog({ open, onOpenChange, house, onSubmit }: HouseFormDialogProps) {
-  const { users } = useUsers();
-  const vecinos = users.filter(u => u.role === 'VECINO');
-
   const form = useForm<HouseFormValues>({
     resolver: zodResolver(houseSchema),
     defaultValues: {
       houseNumber: '',
-      responsibleName: 'Sin asignar',
-      responsibleUserId: '',
       status: 'active',
+      type: undefined,
     },
   });
 
@@ -47,33 +41,18 @@ export function HouseFormDialog({ open, onOpenChange, house, onSubmit }: HouseFo
       if (house) {
         form.reset({
           houseNumber: house.houseNumber,
-          responsibleName: house.responsibleName,
-          responsibleUserId: house.responsibleUserId || '',
           status: house.status,
+          type: house.type,
         });
       } else {
         form.reset({
           houseNumber: '',
-          responsibleName: 'Sin asignar',
-          responsibleUserId: '',
           status: 'active',
+          type: undefined,
         });
       }
     }
   }, [open, house, form]);
-
-  const handleUserChange = (userId: string) => {
-    if (userId === 'none') {
-      form.setValue('responsibleUserId', '');
-      form.setValue('responsibleName', 'Sin asignar');
-    } else {
-      const user = vecinos.find(u => u.id === userId);
-      if (user) {
-        form.setValue('responsibleUserId', userId);
-        form.setValue('responsibleName', user.name);
-      }
-    }
-  };
 
   const handleSubmit = (data: HouseFormValues) => {
     onSubmit(data);
@@ -106,42 +85,23 @@ export function HouseFormDialog({ open, onOpenChange, house, onSubmit }: HouseFo
 
             <FormField
               control={form.control}
-              name="responsibleUserId"
+              name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Responsable (Vecino)</FormLabel>
-                  <Select
-                    value={field.value || 'none'}
-                    onValueChange={handleUserChange}
-                  >
+                  <FormLabel>Tipo</FormLabel>
+                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar responsable" />
+                        <SelectValue placeholder="Sin especificar" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">Sin asignar</SelectItem>
-                      {vecinos.map(user => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="">Sin especificar</SelectItem>
+                      <SelectItem value="casa">Casa</SelectItem>
+                      <SelectItem value="terreno">Terreno</SelectItem>
+                      <SelectItem value="en_construccion">En construcción</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="responsibleName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre del Responsable</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
