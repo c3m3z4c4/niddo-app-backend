@@ -28,8 +28,7 @@ import {
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import logo from '@/assets/logo.png';
-import logoSmall from '@/assets/logo-small.png';
+// TODO: replace with Niddo geometric isotipo asset when available
 import { NotificationBell } from '@/components/NotificationBell';
 
 const adminLinks = [
@@ -110,15 +109,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
       <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b bg-card px-4 lg:hidden">
-        <Link to="/admin" className="flex items-center gap-3">
-          <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-            <img
-              src={logo}
-              alt="Niddo"
-              className="h-full w-full object-contain"
-            />
-          </div>
-          <span className="font-serif text-lg font-semibold text-foreground">Panel Admin</span>
+        <Link to="/admin" className="flex items-center gap-2">
+          <span className="font-title font-bold text-2xl text-accent">Niddo</span>
+          <span className="text-xs font-medium text-muted-foreground">Admin</span>
         </Link>
         <div className="flex items-center gap-1">
           <NotificationBell />
@@ -143,7 +136,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-          <span className="font-serif text-lg font-semibold text-sidebar-foreground">Menú</span>
+          <span className="font-title font-semibold text-sidebar-foreground">Niddo</span>
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)} className="text-sidebar-foreground">
             <X className="h-5 w-5" />
           </Button>
@@ -203,25 +196,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex h-20 items-center justify-between border-b border-sidebar-border px-4">
             {sidebarOpen ? (
-              <Link to="/admin" className="flex items-center gap-3">
-                <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-                  <img
-                    src={logo}
-                    alt="Niddo"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-                <span className="font-serif text-lg font-semibold text-sidebar-foreground">Admin</span>
+              <Link to="/admin" className="flex items-center gap-2">
+                <span className="font-title font-bold text-2xl text-white">Niddo</span>
+                <span className="text-xs font-medium text-sidebar-foreground/60">Admin</span>
               </Link>
             ) : (
               <Link to="/admin" className="flex items-center justify-center w-full">
-                <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-                  <img
-                    src={logoSmall}
-                    alt="Niddo"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
+                {/* TODO: insert Niddo geometric isotipo here */}
+                <span className="font-title font-bold text-xl text-white">N</span>
               </Link>
             )}
             <Button

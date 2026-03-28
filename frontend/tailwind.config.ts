@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Poppins", "system-ui", "sans-serif"],
-        serif: ["Playfair Display", "Georgia", "serif"],
+        sans:  ["Inter", "system-ui", "sans-serif"],
+        title: ["Poppins", "sans-serif"],
+        serif: ["Poppins", "sans-serif"], // backward-compat alias → font-serif still works
       },
       colors: {
         border: "hsl(var(--border))",

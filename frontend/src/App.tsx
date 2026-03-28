@@ -23,6 +23,7 @@ import AdminEvents from "./pages/admin/Events";
 import AdminHouses from "./pages/admin/Houses";
 import AdminUsers from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,7 @@ function RootRedirect() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Landing />;
   if (user && ADMIN_ROLES.includes(user.role)) return <Navigate to="/admin" replace />;
   return <VecinoHome />;
 }

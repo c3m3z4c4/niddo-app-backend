@@ -1,98 +1,107 @@
-@import '@fontsource/playfair-display/400.css';
-@import '@fontsource/playfair-display/600.css';
-@import '@fontsource/playfair-display/700.css';
-@import '@fontsource/poppins/300.css';
-@import '@fontsource/poppins/400.css';
+/* ── Fonts ─────────────────────────────────────────────────── */
+@import '@fontsource/inter/300.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
 @import '@fontsource/poppins/500.css';
 @import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Niddo — Design System (default palette, overridden by BrandingContext) */
+/* ── Niddo Design System ──────────────────────────────────────
+   Primary = Coral/Terracota  → botones, CTAs, interactive
+   Sidebar  = Índigo profundo → navegación, marca
+   Background = Blanco puro   → limpieza total
+   Overridden per-tenant by BrandingContext
+──────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    /* Semantic tokens — Niddo Indigo + Coral */
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
+    /* Surface */
+    --background: 0 0% 100%;
+    --foreground: 243 40% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 243 40% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 243 40% 15%;
 
-    --primary: 239 84% 67%;
+    /* Primary = Coral (buttons, CTAs) */
+    --primary: 14 91% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 239 50% 90%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary = soft indigo tint */
+    --secondary: 243 30% 93%;
+    --secondary-foreground: 243 45% 20%;
 
-    --accent: 16 85% 60%;
+    /* Accent = deep indigo (emphasis, badges) */
+    --accent: 243 45% 20%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 220 14% 93%;
+    --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 88%;
-    --input: 220 14% 90%;
-    --ring: 239 84% 67%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 14 91% 62%;
 
     --radius: 0.75rem;
 
-    /* Sidebar — dark indigo */
-    --sidebar-background: 228 45% 18%;
+    /* Sidebar = Niddo deep indigo */
+    --sidebar-background: 243 45% 20%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 239 84% 67%;
-    --sidebar-accent: 228 45% 24%;
+    --sidebar-primary-foreground: 243 45% 20%;
+    --sidebar-accent: 243 45% 27%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 45% 24%;
+    --sidebar-border: 243 45% 27%;
     --sidebar-ring: 0 0% 100%;
   }
 
   .dark {
-    --background: 222 47% 8%;
+    --background: 243 40% 8%;
     --foreground: 0 0% 97%;
 
-    --card: 222 47% 11%;
+    --card: 243 40% 11%;
     --card-foreground: 0 0% 97%;
 
-    --popover: 222 47% 11%;
+    --popover: 243 40% 11%;
     --popover-foreground: 0 0% 97%;
 
-    --primary: 239 84% 72%;
+    --primary: 14 91% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 239 30% 22%;
+    --secondary: 243 30% 18%;
     --secondary-foreground: 0 0% 97%;
 
-    --accent: 16 85% 55%;
+    --accent: 243 45% 30%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 222 20% 18%;
+    --muted: 243 20% 18%;
     --muted-foreground: 220 9% 60%;
 
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 20% 22%;
-    --input: 222 20% 22%;
-    --ring: 239 84% 72%;
+    --border: 243 20% 22%;
+    --input: 243 20% 22%;
+    --ring: 14 91% 65%;
 
-    --sidebar-background: 222 47% 6%;
+    --sidebar-background: 243 45% 7%;
     --sidebar-foreground: 0 0% 97%;
-    --sidebar-primary: 239 84% 72%;
+    --sidebar-primary: 14 91% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent: 243 45% 13%;
     --sidebar-accent-foreground: 0 0% 97%;
-    --sidebar-border: 222 20% 14%;
-    --sidebar-ring: 239 84% 72%;
+    --sidebar-border: 243 20% 14%;
+    --sidebar-ring: 14 91% 65%;
   }
 }
 
@@ -106,13 +115,18 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-title;
   }
 }
 
-/* Custom utilities */
+/* ── Utilities ───────────────────────────────────────────── */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Subtle card lift on hover — used in landing page */
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md;
   }
 }

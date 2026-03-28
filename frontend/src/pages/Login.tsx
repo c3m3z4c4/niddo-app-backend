@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import logo from '@/assets/logo.png';
+// TODO: import Niddo isotipo asset when available
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -21,7 +21,7 @@ export default function Login() {
 
   // Redirect if already authenticated
   if (isAuthenticated && user) {
-    const from = location.state?.from?.pathname || (user.role === 'ADMIN' ? '/admin' : '/');
+    const from = location.state?.from?.pathname || (user.role !== 'RESIDENT' ? '/admin' : '/');
     navigate(from, { replace: true });
     return null;
   }
@@ -50,19 +50,17 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-park-green-light/30 via-background to-park-beige/20 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-secondary via-background to-background p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Logo & Title */}
         <div className="text-center">
-          <div className="mx-auto mb-4 h-32 w-32 overflow-hidden rounded-full bg-white p-2 shadow-lg">
-            <img 
-              src={logo} 
-              alt="Privadas del Parque" 
-              className="h-full w-full object-contain"
-            />
+          {/* TODO: replace with Niddo geometric isotipo */}
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-accent shadow-lg">
+            <span className="font-title font-bold text-3xl text-white">N</span>
           </div>
-          <p className="mt-2 text-muted-foreground">
-            Comunidad Vecinal
+          <h1 className="font-title font-bold text-3xl text-accent">Niddo</h1>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Tu condominio en armonía
           </p>
         </div>
 
@@ -134,15 +132,15 @@ export default function Login() {
             <div className="mt-6 rounded-lg bg-muted/50 p-4">
               <p className="mb-2 text-sm font-medium text-foreground">Credenciales de prueba:</p>
               <div className="space-y-1 text-xs text-muted-foreground">
-                <p><strong>Admin:</strong> admin@privadasdelparque.com / admin123</p>
-                <p><strong>Vecino:</strong> juan.perez@email.com / vecino123</p>
+                <p><strong>Platform Admin:</strong> superadmin@niddo.app / SuperAdmin2025!</p>
+                <p><strong>Vecino:</strong> vecino@privadasdelparque.com / Vecino2025!</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          © 2024 Privadas del Parque. Todos los derechos reservados.
+          © 2026 Niddo. Todos los derechos reservados.
         </p>
       </div>
     </div>
