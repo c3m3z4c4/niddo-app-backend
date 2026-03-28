@@ -40,6 +40,14 @@ export class CondominiumsController {
     return this.service.findAll();
   }
 
+  /** PLATFORM_ADMIN only: aggregate SaaS KPIs */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PLATFORM_ADMIN)
+  @Get('stats')
+  getPlatformStats() {
+    return this.service.getPlatformStats();
+  }
+
   /** PLATFORM_ADMIN only: get one condominium */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PLATFORM_ADMIN)

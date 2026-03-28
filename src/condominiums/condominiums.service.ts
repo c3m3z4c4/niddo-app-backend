@@ -94,4 +94,75 @@ export class CondominiumsService {
     });
     return this.repo.save(condo);
   }
+
+  async getPlatformStats(): Promise<{
+    totals: { condominiums: number; users: number; houses: number };
+    byStatus: Record<string, number>;
+    trialsExpiringSoon: Condominium[];
+    monthlyGrowth: { month: string; count: number }[];
+    perCondominium: {
+      id: string; name: string; slug: string; status: string;
+      city: string | null; trialEndsAt: Date | null; createdAt: Date;
+      userCount: number; houseCount: number;
+    }[];
+  }> {
+    const condominiums = await this.repo.find({ order: { createdAt: 'DESC' } });
+
+    // Count users and houses per condominium
+    const userCounts = await this.repo.manager.query(`
+      SELECT "condominiumId", COUNT(*)::int AS count
+      FROM users
+      WHERE "condominiumId" IS NOT NULL
+      GROUP BY "condominiumId"
+    `);
+    const houseCounts = await this.repo.manager.query(`
+      SELECT "condominiumId", COUNT(*)::int AS count
+      FROM houses
+      WHERE "condominiumId" IS NOT NULL
+      GROUP BY "condominiumId"
+    `);
+
+    const userMap: Record<string, number> = {};
+    const houseMap: Record<string, number> = {};
+    for (const r of userCounts) userMap[r.condominiumId] = r.count;
+    for (const r of houseCounts) houseMap[r.condominiumId] = r.count;
+
+    // Totals
+    const totalUsers = (await this.repo.manager.query(`SELECT COUNT(*)::int AS c FROM users WHERE "condominiumId" IS NOT NULL`))[0].c;
+    const totalHouses = (await this.repo.manager.query(`SELECT COUNT(*)::int AS c FROM houses WHERE "condominiumId" IS NOT NULL`))[0].c;
+
+    // By status
+    const byStatus: Record<string, number> = { active: 0, trial: 0, suspended: 0, cancelled: 0 };
+    for (const c of condominiums) byStatus[c.status] = (byStatus[c.status] ?? 0) + 1;
+
+    // Trials expiring in next 7 days
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const trialsExpiringSoon = condominiums.filter(
+      c => c.status === 'trial' && c.trialEndsAt && c.trialEndsAt <= in7,
+    );
+
+    // Monthly growth (last 6 months)
+    const monthlyRaw = await this.repo.manager.query(`
+      SELECT TO_CHAR("createdAt", 'YYYY-MM') AS month, COUNT(*)::int AS count
+      FROM condominiums
+      WHERE "createdAt" >= NOW() - INTERVAL '6 months'
+      GROUP BY month
+      ORDER BY month ASC
+    `);
+
+    return {
+      totals: { condominiums: condominiums.length, users: totalUsers, houses: totalHouses },
+      byStatus,
+      trialsExpiringSoon,
+      monthlyGrowth: monthlyRaw,
+      perCondominium: condominiums.map(c => ({
+        id: c.id, name: c.name, slug: c.slug, status: c.status,
+        city: c.city ?? null, trialEndsAt: c.trialEndsAt,
+        createdAt: c.createdAt,
+        userCount: userMap[c.id] ?? 0,
+        houseCount: houseMap[c.id] ?? 0,
+      })),
+    };
+  }
 }
