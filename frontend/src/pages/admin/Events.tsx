@@ -18,7 +18,7 @@ import { Plus, Pencil, Trash2, TreePine, Calendar, Clock, MapPin, Loader2, Searc
 import { format, parseISO, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { greenAreas } from '@/data/mockData';
+const greenAreas = ['Jardín Central', 'Área de Convivencia Norte', 'Área de Convivencia Sur', 'Explanada Principal', 'Parque Infantil', 'Zona de Asadores'];
 import { RsvpCount } from '@/components/RsvpButtons';
 
 export default function AdminEvents() {

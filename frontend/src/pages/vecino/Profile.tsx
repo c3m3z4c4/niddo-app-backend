@@ -1,14 +1,25 @@
 import { VecinoLayout } from '@/components/layouts/VecinoLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHouses } from '@/hooks/useDataStore';
+import { useHousesQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Home, Mail, Shield } from 'lucide-react';
 
+const roleLabels: Record<string, string> = {
+  RESIDENT: 'Vecino',
+  CONDO_ADMIN: 'Administrador',
+  PRESIDENTE: 'Presidente',
+  SECRETARIO: 'Secretario',
+  TESORERO: 'Tesorero',
+  PLATFORM_ADMIN: 'Plataforma',
+};
+
 export default function VecinoProfile() {
   const { user } = useAuth();
-  const { houses } = useHouses();
+  const { data: houses = [] } = useHousesQuery();
 
-  const userHouse = user?.houseId ? houses.find(h => h.id === user.houseId) : null;
+  // Find the house where this user is a resident
+  const userHouse = houses.find(h => h.residents?.some(r => r.id === user?.id))
+    ?? (user?.houseId ? houses.find(h => h.id === user.houseId) : null);
 
   return (
     <VecinoLayout>
@@ -29,8 +40,8 @@ export default function VecinoProfile() {
                   <User className="h-8 w-8 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">{user?.name}</CardTitle>
-                  <CardDescription>Residente de Privadas del Parque</CardDescription>
+                  <CardTitle className="text-xl">{user?.name} {user?.lastName}</CardTitle>
+                  <CardDescription>Residente</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -42,13 +53,13 @@ export default function VecinoProfile() {
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
                 <Shield className="h-5 w-5 text-accent" />
                 <div>
                   <p className="text-sm font-medium">Rol</p>
                   <p className="text-sm text-muted-foreground">
-                    {user?.role === 'ADMIN' ? 'Administrador' : 'Vecino'}
+                    {roleLabels[user?.role ?? ''] ?? user?.role}
                   </p>
                 </div>
               </div>
@@ -82,10 +93,12 @@ export default function VecinoProfile() {
                         {userHouse.status === 'active' ? 'Activo' : 'Inactivo'}
                       </p>
                     </div>
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-sm font-medium">Responsable</p>
-                      <p className="text-sm text-muted-foreground">{userHouse.responsibleName}</p>
-                    </div>
+                    {userHouse.type && (
+                      <div className="rounded-lg bg-muted/50 p-3">
+                        <p className="text-sm font-medium">Tipo</p>
+                        <p className="text-sm text-muted-foreground capitalize">{userHouse.type.replace('_', ' ')}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

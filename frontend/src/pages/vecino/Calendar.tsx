@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { VecinoLayout } from '@/components/layouts/VecinoLayout';
-import { useMeetings, useEvents } from '@/hooks/useDataStore';
+import { useMeetingsQuery, useEventsQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,8 +16,8 @@ type CalendarItem =
   | { type: 'event'; data: GreenAreaEvent };
 
 export default function VecinoCalendar() {
-  const { meetings } = useMeetings();
-  const { events } = useEvents();
+  const { data: meetings = [] } = useMeetingsQuery();
+  const { data: events = [] } = useEventsQuery();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
@@ -181,7 +181,7 @@ export default function VecinoCalendar() {
                         <div className="mt-2 space-y-1">
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {item.data.time} hrs
+                            {item.data.startTime} hrs
                           </div>
                           {item.type === 'meeting' && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

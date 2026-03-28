@@ -1,5 +1,5 @@
 import { VecinoLayout } from '@/components/layouts/VecinoLayout';
-import { useEvents } from '@/hooks/useDataStore';
+import { useEventsQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, TreePine, FileText } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RsvpButtons } from '@/components/RsvpButtons';
 
 export default function VecinoEvents() {
-  const { events, isLoading } = useEvents();
+  const { data: events = [], isLoading } = useEventsQuery();
 
   const today = new Date();
   
@@ -50,7 +50,7 @@ export default function VecinoEvents() {
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4 text-primary" />
-          <span>{event.time} hrs</span>
+          <span>{event.startTime} hrs</span>
         </div>
         
         <div className="rounded-lg bg-muted/50 p-4">

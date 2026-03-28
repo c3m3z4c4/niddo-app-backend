@@ -1,6 +1,6 @@
 import { VecinoLayout } from '@/components/layouts/VecinoLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMeetings, useEvents } from '@/hooks/useDataStore';
+import { useMeetingsQuery, useEventsQuery } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, TreePine, Clock, MapPin, ArrowRight } from 'lucide-react';
@@ -10,8 +10,8 @@ import { es } from 'date-fns/locale';
 
 export default function VecinoHome() {
   const { user } = useAuth();
-  const { meetings } = useMeetings();
-  const { events } = useEvents();
+  const { data: meetings = [] } = useMeetingsQuery();
+  const { data: events = [] } = useEventsQuery();
 
   const today = new Date();
   
@@ -89,7 +89,7 @@ export default function VecinoHome() {
                   <CardContent className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      {meeting.time} hrs
+                      {meeting.startTime} hrs
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
@@ -137,7 +137,7 @@ export default function VecinoHome() {
                   <CardContent>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      {event.time} hrs
+                      {event.startTime} hrs
                     </div>
                   </CardContent>
                 </Card>
