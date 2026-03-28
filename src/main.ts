@@ -155,18 +155,23 @@ async function bootstrap() {
         AND role NOT IN ('PLATFORM_ADMIN')
     `, [seedCondo.id]);
 
-    // Backfill condominiumId for all other tables
+    // Backfill condominiumId for all other tables (each wrapped independently)
     for (const table of [
       'houses', 'green_area_events', 'meetings', 'rsvps',
       'dues_config', 'dues_payments', 'dues_promotions', 'dues_policy',
       'extraordinary_income', 'green_area_reservations', 'projects',
       'direct_messages', 'notifications',
     ]) {
-      await dataSource.query(`
-        UPDATE "${table}"
-        SET "condominiumId" = $1
-        WHERE "condominiumId" IS NULL
-      `, [seedCondo.id]);
+      try {
+        const result = await dataSource.query(`
+          UPDATE "${table}"
+          SET "condominiumId" = $1
+          WHERE "condominiumId" IS NULL
+        `, [seedCondo.id]);
+        if (result[1] > 0) console.log(`  ↳ backfilled ${result[1]} rows in ${table}`);
+      } catch (tableErr: any) {
+        console.warn(`  ⚠️  backfill skipped for "${table}": ${tableErr.message}`);
+      }
     }
 
     console.log('✅ condominiumId backfill complete');
