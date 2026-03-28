@@ -24,7 +24,7 @@ export class ReservationsService {
 
   async create(dto: CreateReservationDto, user: User): Promise<GreenAreaReservation> {
     // Check for pending dues — admin/mesa directiva are exempt
-    const adminRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
+    const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
     if (!adminRoles.includes(user.role as Role)) {
       const pendingCount = await this.duesRepo.count({
         where: { userId: user.id, status: 'pending' },
@@ -45,7 +45,7 @@ export class ReservationsService {
   }
 
   async findAll(user: User): Promise<GreenAreaReservation[]> {
-    const adminRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
+    const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
     const isAdmin = adminRoles.includes(user.role as Role);
 
     if (isAdmin) {
@@ -99,7 +99,7 @@ export class ReservationsService {
     const reservation = await this.repo.findOne({ where: { id } });
     if (!reservation) throw new NotFoundException('Solicitud no encontrada');
 
-    const adminRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
+    const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
     const isAdmin = adminRoles.includes(user.role as Role);
 
     if (!isAdmin && reservation.userId !== user.id) {

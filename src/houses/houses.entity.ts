@@ -6,13 +6,16 @@ import {
   ManyToMany,
   JoinTable,
   Unique,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 export type HouseType = 'terreno' | 'en_construccion' | 'casa';
 
 @Entity('houses')
-@Unique(['houseNumber', 'address'])
+@Unique(['houseNumber', 'condominiumId'])
 export class House {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -47,4 +50,13 @@ export class House {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

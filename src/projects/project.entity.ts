@@ -1,9 +1,12 @@
+import { Condominium } from '../condominiums/condominium.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 export type ProjectStatus =
@@ -45,4 +48,13 @@ export class Project {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

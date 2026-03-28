@@ -19,6 +19,7 @@ import { BackupModule } from './backup/backup.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { MessagesModule } from './messages/messages.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
+import { CondominiumsModule } from './condominiums/condominiums.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { UserSettingsModule } from './user-settings/user-settings.module';
     ReservationsModule,
     MessagesModule,
     UserSettingsModule,
+    CondominiumsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -37,13 +37,13 @@ export class DuesController {
   }
 
   @Post('config')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   setConfig(@Body() dto: CreateDuesConfigDto, @Request() req) {
     return this.duesService.setConfig(dto, req.user.role);
   }
 
   @Get('summary')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getSummary(@Query('month') month: string, @Query('year') year: string) {
     return this.duesService.getSummary(Number(month), Number(year));
   }
@@ -56,19 +56,19 @@ export class DuesController {
   }
 
   @Get('promotions/all')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getAllPromotions() {
     return this.duesService.getAllPromotions();
   }
 
   @Post('promotions')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   createPromotion(@Body() dto: CreatePromotionDto, @Request() req) {
     return this.duesService.createPromotion(dto, req.user.role);
   }
 
   @Patch('promotions/:id')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   updatePromotion(
     @Param('id') id: string,
     @Body() dto: UpdatePromotionDto,
@@ -78,7 +78,7 @@ export class DuesController {
   }
 
   @Delete('promotions/:id')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   deletePromotion(@Param('id') id: string, @Request() req) {
     return this.duesService.deletePromotion(id, req.user.role);
   }
@@ -91,31 +91,31 @@ export class DuesController {
   }
 
   @Post('generate')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   generateMonthlyDues(@Body() dto: GenerateDuesDto) {
     return this.duesService.generateMonthlyDues(dto.month, dto.year);
   }
 
   @Post('import')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO)
   importPayments(@Body() dto: ImportPaymentsDto) {
     return this.duesService.importPayments(dto.payments);
   }
 
   @Delete('all')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN)
   deleteAllPayments(@Request() req) {
     return this.duesService.deleteAllPayments(req.user.role);
   }
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO)
   createPayment(@Body() dto: CreatePaymentDto) {
     return this.duesService.createPayment(dto);
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO)
   updatePayment(@Param('id') id: string, @Body() dto: UpdatePaymentDto) {
     return this.duesService.updatePayment(id, dto);
   }
@@ -123,19 +123,19 @@ export class DuesController {
   // ── Policy ────────────────────────────────────────────────
 
   @Get('policy')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getPolicy() {
     return this.duesService.getPolicy();
   }
 
   @Post('policy')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.TESORERO)
   setPolicy(@Body() dto: CreateDuesPolicyDto) {
     return this.duesService.setPolicy(dto);
   }
 
   @Get('debtors')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getDebtors() {
     return this.duesService.getDebtors();
   }
@@ -143,7 +143,7 @@ export class DuesController {
   // ── Apply Promotion ────────────────────────────────────────
 
   @Post('promotions/apply')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
   applyPromotion(@Body() dto: ApplyPromotionDto, @Request() req) {
     return this.duesService.applyPromotion(dto, req.user.role);
   }
@@ -156,19 +156,19 @@ export class DuesController {
   }
 
   @Post('extraordinary')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
   createExtraordinary(@Body() dto: CreateExtraordinaryDto, @Request() req) {
     return this.duesService.createExtraordinary(dto, req.user.userId);
   }
 
   @Patch('extraordinary/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
   updateExtraordinary(@Param('id') id: string, @Body() dto: CreateExtraordinaryDto) {
     return this.duesService.updateExtraordinary(id, dto);
   }
 
   @Delete('extraordinary/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
   deleteExtraordinary(@Param('id') id: string) {
     return this.duesService.deleteExtraordinary(id);
   }

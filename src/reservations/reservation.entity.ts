@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'closed';
 
@@ -82,4 +83,13 @@ export class GreenAreaReservation {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

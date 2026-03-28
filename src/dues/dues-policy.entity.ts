@@ -1,4 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Condominium } from '../condominiums/condominium.entity';
 
 @Entity('dues_policy')
 export class DuesPolicy {
@@ -19,4 +23,13 @@ export class DuesPolicy {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

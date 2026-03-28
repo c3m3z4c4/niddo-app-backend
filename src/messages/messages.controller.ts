@@ -15,9 +15,9 @@ import { Role } from '../auth/roles.enum';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 
-const ADMIN_ROLES = [
-  Role.SUPER_ADMIN,
-  Role.ADMIN,
+const CONDO_ADMIN_ROLES = [
+  Role.PLATFORM_ADMIN,
+  Role.CONDO_ADMIN,
   Role.PRESIDENTE,
   Role.SECRETARIO,
   Role.TESORERO,
@@ -29,7 +29,7 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @UseGuards(RolesGuard)
-  @Roles(...ADMIN_ROLES)
+  @Roles(...CONDO_ADMIN_ROLES)
   @Post()
   send(@Request() req, @Body() dto: CreateMessageDto) {
     return this.messagesService.send(req.user.userId, dto);
@@ -41,7 +41,7 @@ export class MessagesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(...ADMIN_ROLES)
+  @Roles(...CONDO_ADMIN_ROLES)
   @Get('sent')
   getSent(@Request() req) {
     return this.messagesService.getSent(req.user.userId);

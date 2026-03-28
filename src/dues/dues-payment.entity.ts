@@ -9,9 +9,10 @@ import {
 } from 'typeorm';
 import { User } from '../users/users.entity';
 import { House } from '../houses/houses.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 @Entity('dues_payments')
-@Unique(['userId', 'month', 'year'])
+@Unique(['userId', 'month', 'year', 'condominiumId'])
 export class DuesPayment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -54,4 +55,13 @@ export class DuesPayment {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

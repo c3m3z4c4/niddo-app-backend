@@ -25,7 +25,7 @@ const baseProject: Project = {
   visibleToVecinos: true,
   createdById: 'user-1',
   createdAt: new Date(),
-  updatedAt: new Date(),
+  updatedAt: new Date(), condominiumId: null, condominium: null as any,
 };
 
 describe('ProjectsService', () => {
@@ -49,7 +49,7 @@ describe('ProjectsService', () => {
     it('should return all projects for ADMIN', async () => {
       mockRepo.find.mockResolvedValue([baseProject]);
 
-      const result = await service.findAll(Role.ADMIN);
+      const result = await service.findAll(Role.CONDO_ADMIN);
 
       expect(result).toHaveLength(1);
       expect(mockRepo.find).toHaveBeenCalledWith({ order: { updatedAt: 'DESC' } });
@@ -58,7 +58,7 @@ describe('ProjectsService', () => {
     it('should return only visible projects for VECINO', async () => {
       mockRepo.find.mockResolvedValue([baseProject]);
 
-      const result = await service.findAll(Role.VECINO);
+      const result = await service.findAll(Role.RESIDENT);
 
       expect(result).toHaveLength(1);
       expect(mockRepo.find).toHaveBeenCalledWith({
@@ -74,7 +74,7 @@ describe('ProjectsService', () => {
     it('should return project when found by ADMIN', async () => {
       mockRepo.findOne.mockResolvedValue(baseProject);
 
-      const result = await service.findOne('proj-1', Role.ADMIN);
+      const result = await service.findOne('proj-1', Role.CONDO_ADMIN);
 
       expect(result.id).toBe('proj-1');
     });
@@ -82,19 +82,19 @@ describe('ProjectsService', () => {
     it('should throw NotFoundException when project does not exist', async () => {
       mockRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('bad-id', Role.ADMIN)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('bad-id', Role.CONDO_ADMIN)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when VECINO tries to access hidden project', async () => {
       mockRepo.findOne.mockResolvedValue({ ...baseProject, visibleToVecinos: false });
 
-      await expect(service.findOne('proj-1', Role.VECINO)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('proj-1', Role.RESIDENT)).rejects.toThrow(ForbiddenException);
     });
 
     it('should return project when VECINO accesses a visible project', async () => {
       mockRepo.findOne.mockResolvedValue({ ...baseProject, visibleToVecinos: true });
 
-      const result = await service.findOne('proj-1', Role.VECINO);
+      const result = await service.findOne('proj-1', Role.RESIDENT);
 
       expect(result.id).toBe('proj-1');
     });

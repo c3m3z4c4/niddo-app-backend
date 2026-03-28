@@ -52,8 +52,8 @@ describe('NotificationsService', () => {
 
   describe('createForAllVecinos', () => {
     it('should create notifications for all active vecinos and admins', async () => {
-      const vecino: Partial<User> = { id: 'u1', role: Role.VECINO, isActive: true };
-      const admin: Partial<User> = { id: 'u2', role: Role.ADMIN, isActive: true };
+      const vecino: Partial<User> = { id: 'u1', role: Role.RESIDENT, isActive: true };
+      const admin: Partial<User> = { id: 'u2', role: Role.CONDO_ADMIN, isActive: true };
       mockUsersRepo.find.mockResolvedValue([vecino, admin]);
       mockNotificationsRepo.create.mockImplementation((data) => ({ ...data }));
       mockNotificationsRepo.save.mockResolvedValue([]);

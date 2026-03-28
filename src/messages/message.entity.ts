@@ -7,6 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 @Entity('direct_messages')
 export class DirectMessage {
@@ -44,4 +45,13 @@ export class DirectMessage {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

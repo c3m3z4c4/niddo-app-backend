@@ -34,7 +34,7 @@ export class ReservationsController {
   }
 
   @Patch(':id/review')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   review(
     @Param('id') id: string,
     @Body() dto: ReviewReservationDto,
@@ -44,7 +44,7 @@ export class ReservationsController {
   }
 
   @Patch(':id/close')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   close(
     @Param('id') id: string,
     @Body() dto: CloseReservationDto,

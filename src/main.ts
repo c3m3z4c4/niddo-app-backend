@@ -2,10 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
+import { CondominiumsService } from './condominiums/condominiums.service';
+import { PRIVADAS_DEL_PARQUE_BRANDING } from './condominiums/condominium-branding.interface';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,7 +20,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: 'Content-Type, Authorization, x-tenant-id',
   });
 
   app.useGlobalPipes(
@@ -29,52 +31,91 @@ async function bootstrap() {
     }),
   );
 
-  // Seed initial SUPER_ADMIN on startup
+  // ── Seed: Condominium "Privadas del Parque" ─────────────────────────────
+  const condominiumsService = app.get(CondominiumsService);
+  const seedCondo = await condominiumsService.findOrCreate({
+    name: 'Privadas del Parque',
+    slug: 'privadas-del-parque',
+    city: 'México',
+    state: 'MX',
+    status: 'active',
+    branding: PRIVADAS_DEL_PARQUE_BRANDING,
+  });
+  console.log(`✅ Condominium seed: ${seedCondo.name} (${seedCondo.id})`);
+
+  // ── Seed: Platform admins (no condominiumId) ────────────────────────────
   const usersService = app.get(UsersService);
-  await usersService.createSuperAdmin(
+  await usersService.createPlatformAdmin(
     'Super',
     'Administrador',
-    process.env.SUPER_ADMIN_EMAIL ?? 'superadmin@privadasdelparque.com',
+    process.env.SUPER_ADMIN_EMAIL ?? 'superadmin@niddo.app',
     process.env.SUPER_ADMIN_PASSWORD ?? 'SuperAdmin2025!',
   );
-  await usersService.createSuperAdmin(
+  await usersService.createPlatformAdmin(
     'Deorsoft',
     'Admin',
     'deorsoft@gmail.com',
     'Temporal2025!',
   );
 
-  await usersService.createSeedVecino(
+  // ── Seed: Vecino de prueba en Privadas del Parque ───────────────────────
+  await usersService.createSeedResident(
     'Juan',
     'Vecino',
     'vecino@privadasdelparque.com',
     'Vecino2025!',
+    seedCondo.id,
   );
 
-  // One-time migration: populate house_residents join table from users.houseId
+  // ── One-time migration: fix house_residents join table ──────────────────
   try {
     const dataSource = app.get(DataSource);
-    // Remove any ADMIN/SUPER_ADMIN that got into house_residents by mistake
+
+    // Remove any admin users that got into house_residents by mistake
     await dataSource.query(`
       DELETE FROM house_residents
       WHERE "userId" IN (
-        SELECT id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN')
+        SELECT id FROM users WHERE role IN ('PLATFORM_ADMIN', 'CONDO_ADMIN')
       )
     `);
-    // Migrate VECINO residents from users.houseId into the join table
+
+    // Migrate residents from users.houseId into the join table
     await dataSource.query(`
       INSERT INTO house_residents ("houseId", "userId")
       SELECT "houseId", id FROM users
       WHERE "houseId" IS NOT NULL
-        AND role NOT IN ('ADMIN', 'SUPER_ADMIN')
+        AND role NOT IN ('PLATFORM_ADMIN', 'CONDO_ADMIN')
       ON CONFLICT DO NOTHING
     `);
-    console.log('✅ house_residents migrated from users.houseId');
+
+    // Backfill condominiumId for existing users that belong to the seed condo
+    await dataSource.query(`
+      UPDATE users
+      SET "condominiumId" = $1
+      WHERE "condominiumId" IS NULL
+        AND role NOT IN ('PLATFORM_ADMIN')
+    `, [seedCondo.id]);
+
+    // Backfill condominiumId for all other tables
+    for (const table of [
+      'houses', 'green_area_events', 'meetings', 'rsvps',
+      'dues_config', 'dues_payments', 'dues_promotions', 'dues_policy',
+      'extraordinary_income', 'green_area_reservations', 'projects',
+      'direct_messages', 'notifications',
+    ]) {
+      await dataSource.query(`
+        UPDATE "${table}"
+        SET "condominiumId" = $1
+        WHERE "condominiumId" IS NULL
+      `, [seedCondo.id]);
+    }
+
+    console.log('✅ condominiumId backfill complete');
   } catch (e) {
-    console.warn('⚠️  house_residents migration skipped:', e.message);
+    console.warn('⚠️  Seed migration skipped:', e.message);
   }
 
   await app.listen(3000, '0.0.0.0');
-  console.log(`✅ Backend running on http://0.0.0.0:3000`);
+  console.log(`✅ Niddo backend running on http://0.0.0.0:3000`);
 }
 bootstrap();

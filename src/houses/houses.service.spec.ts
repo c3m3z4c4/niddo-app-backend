@@ -7,13 +7,15 @@ import { House } from './houses.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 
-const baseHouse: House = {
+const baseHouse = {
   id: 'house-uuid-1',
   houseNumber: 'A-01',
   address: 'Calle Principal 1',
   status: 'active',
   residents: [],
   createdAt: new Date(),
+  condominiumId: null as any,
+  condominium: null as any,
 };
 
 const mockRepo = {

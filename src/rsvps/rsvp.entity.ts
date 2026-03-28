@@ -1,4 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Unique,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Condominium } from '../condominiums/condominium.entity';
 
 @Entity('rsvps')
 @Unique(['userId', 'targetType', 'targetId'])
@@ -23,4 +27,13 @@ export class Rsvp {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

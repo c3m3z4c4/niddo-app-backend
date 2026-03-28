@@ -36,8 +36,8 @@ export class ProjectsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.ADMIN,
+    Role.PLATFORM_ADMIN,
+    Role.CONDO_ADMIN,
     Role.PRESIDENTE,
     Role.SECRETARIO,
     Role.TESORERO,
@@ -49,8 +49,8 @@ export class ProjectsController {
   @Patch(':id/toggle-visibility')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.ADMIN,
+    Role.PLATFORM_ADMIN,
+    Role.CONDO_ADMIN,
     Role.PRESIDENTE,
     Role.SECRETARIO,
     Role.TESORERO,
@@ -62,8 +62,8 @@ export class ProjectsController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.ADMIN,
+    Role.PLATFORM_ADMIN,
+    Role.CONDO_ADMIN,
     Role.PRESIDENTE,
     Role.SECRETARIO,
     Role.TESORERO,
@@ -75,8 +75,8 @@ export class ProjectsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.ADMIN,
+    Role.PLATFORM_ADMIN,
+    Role.CONDO_ADMIN,
     Role.PRESIDENTE,
     Role.SECRETARIO,
     Role.TESORERO,

@@ -7,6 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { House } from '../houses/houses.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 export type ExtraordinaryCategory = 'multa' | 'evento' | 'obra' | 'cuota_especial' | 'otro';
 
@@ -45,4 +46,13 @@ export class ExtraordinaryIncome {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
+
 }

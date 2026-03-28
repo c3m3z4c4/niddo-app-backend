@@ -13,7 +13,7 @@ import { DuesPolicy } from './dues-policy.entity';
 import { ExtraordinaryIncome } from './extraordinary-income.entity';
 import { House } from '../houses/houses.entity';
 import { User } from '../users/users.entity';
-import { Role, ADMIN_ROLES } from '../auth/roles.enum';
+import { Role, CONDO_ADMIN_ROLES } from '../auth/roles.enum';
 import { CreateDuesConfigDto } from './dto/create-dues-config.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -25,7 +25,7 @@ import { CreateExtraordinaryDto } from './dto/create-extraordinary.dto';
 import { ApplyPromotionDto } from './dto/apply-promotion.dto';
 
 // These roles never get dues records at all
-const SKIP_ROLES: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
+const SKIP_ROLES: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN];
 
 // These roles get dues records but marked as exempt (0 amount)
 const EXEMPT_ROLES: Role[] = [Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
@@ -57,7 +57,7 @@ export class DuesService {
   }
 
   async setConfig(dto: CreateDuesConfigDto, requestingRole: Role): Promise<DuesConfig> {
-    if (requestingRole !== Role.SUPER_ADMIN) {
+    if (requestingRole !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Solo SUPER_ADMIN puede configurar el monto de cuotas');
     }
 
@@ -127,8 +127,8 @@ export class DuesService {
 
   async findAll(user: { userId: string; role: Role }): Promise<DuesPayment[]> {
     const canSeeAll = [
-      Role.SUPER_ADMIN,
-      Role.ADMIN,
+      Role.PLATFORM_ADMIN,
+      Role.CONDO_ADMIN,
       Role.PRESIDENTE,
       Role.SECRETARIO,
       Role.TESORERO,
@@ -284,7 +284,7 @@ export class DuesService {
   }
 
   async deleteAllPayments(requestingRole: Role): Promise<{ deleted: number }> {
-    if (![Role.SUPER_ADMIN, Role.ADMIN].includes(requestingRole)) {
+    if (![Role.PLATFORM_ADMIN, Role.CONDO_ADMIN].includes(requestingRole)) {
       throw new ForbiddenException('Solo SUPER_ADMIN o ADMIN pueden eliminar todos los pagos');
     }
     const all = await this.paymentRepo.find();
@@ -312,7 +312,7 @@ export class DuesService {
     dto: CreatePromotionDto,
     role: Role,
   ): Promise<DuesPromotion> {
-    if (role !== Role.SUPER_ADMIN) throw new ForbiddenException();
+    if (role !== Role.PLATFORM_ADMIN) throw new ForbiddenException();
     return this.promotionRepo.save(this.promotionRepo.create(dto));
   }
 
@@ -321,7 +321,7 @@ export class DuesService {
     dto: UpdatePromotionDto,
     role: Role,
   ): Promise<DuesPromotion> {
-    if (role !== Role.SUPER_ADMIN) throw new ForbiddenException();
+    if (role !== Role.PLATFORM_ADMIN) throw new ForbiddenException();
     const promo = await this.promotionRepo.findOne({ where: { id } });
     if (!promo) throw new NotFoundException();
     Object.assign(promo, dto);
@@ -329,7 +329,7 @@ export class DuesService {
   }
 
   async deletePromotion(id: string, role: Role): Promise<void> {
-    if (role !== Role.SUPER_ADMIN) throw new ForbiddenException();
+    if (role !== Role.PLATFORM_ADMIN) throw new ForbiddenException();
     const promo = await this.promotionRepo.findOne({ where: { id } });
     if (!promo) throw new NotFoundException();
     await this.promotionRepo.remove(promo);
@@ -352,7 +352,7 @@ export class DuesService {
     dto: ApplyPromotionDto,
     requestingRole: Role,
   ): Promise<{ applied: number }> {
-    if (![Role.SUPER_ADMIN, Role.ADMIN, Role.TESORERO, Role.PRESIDENTE].includes(requestingRole)) {
+    if (![Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE].includes(requestingRole)) {
       throw new ForbiddenException();
     }
 
@@ -417,7 +417,7 @@ export class DuesService {
 
   async findAllExtraordinary(user: { userId: string; role: Role }): Promise<ExtraordinaryIncome[]> {
     const isAdmin = [
-      Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
+      Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
     ].includes(user.role);
 
     if (isAdmin) {
@@ -482,7 +482,7 @@ export class DuesService {
     user: { userId: string; role: Role },
   ): Promise<{ payments: DuesPayment[]; extraordinary: ExtraordinaryIncome[] }> {
     const isAdmin = [
-      Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
+      Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
     ].includes(user.role);
 
     if (!isAdmin) {

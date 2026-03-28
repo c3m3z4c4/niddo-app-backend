@@ -18,7 +18,7 @@ export class RsvpsController {
 
   @Get(':targetType/:targetId/attendance')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   getAttendance(
     @Param('targetType') targetType: string,
     @Param('targetId') targetId: string,

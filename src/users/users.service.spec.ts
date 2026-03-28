@@ -18,7 +18,7 @@ jest.mock('bcrypt', () => ({
 }));
 import * as bcrypt from 'bcrypt';
 
-const baseUser: User = {
+const baseUser = {
   id: 'uuid-1',
   name: 'Juan',
   lastName: 'Perez',
@@ -26,11 +26,13 @@ const baseUser: User = {
   password: 'hashed',
   phone: '123',
   address: 'Calle 1',
-  role: Role.VECINO,
+  role: Role.RESIDENT,
   isActive: true,
-  house: null,
-  houseId: null,
+  house: null as any,
+  houseId: null as any,
   createdAt: new Date(),
+  condominiumId: null as any,
+  condominium: null as any,
 };
 
 const mockRepo = {
@@ -99,7 +101,7 @@ describe('UsersService', () => {
       password: 'secret',
       phone: '456',
       address: 'Calle 2',
-      role: Role.VECINO,
+      role: Role.RESIDENT,
     };
 
     it('should create a user and return without password', async () => {
@@ -108,7 +110,7 @@ describe('UsersService', () => {
       mockRepo.create.mockReturnValue({ ...baseUser, email: dto.email });
       mockRepo.save.mockResolvedValue({ ...baseUser, email: dto.email });
 
-      const result = await service.create(dto, Role.ADMIN);
+      const result = await service.create(dto, Role.CONDO_ADMIN);
 
       expect(result).not.toHaveProperty('password');
       expect(mockRepo.save).toHaveBeenCalled();
@@ -117,29 +119,29 @@ describe('UsersService', () => {
     it('should throw ConflictException when email already exists', async () => {
       mockRepo.findOne.mockResolvedValue(baseUser);
 
-      await expect(service.create(dto, Role.ADMIN)).rejects.toThrow(
+      await expect(service.create(dto, Role.CONDO_ADMIN)).rejects.toThrow(
         ConflictException,
       );
     });
 
     it('should throw ForbiddenException when non-SUPER_ADMIN tries to create an ADMIN', async () => {
-      const adminDto: CreateUserDto = { ...dto, role: Role.ADMIN };
+      const adminDto: CreateUserDto = { ...dto, role: Role.CONDO_ADMIN };
 
-      await expect(service.create(adminDto, Role.ADMIN)).rejects.toThrow(
+      await expect(service.create(adminDto, Role.CONDO_ADMIN)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
     it('should allow SUPER_ADMIN to create an ADMIN', async () => {
-      const adminDto: CreateUserDto = { ...dto, role: Role.ADMIN };
+      const adminDto: CreateUserDto = { ...dto, role: Role.CONDO_ADMIN };
       mockRepo.findOne.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-      mockRepo.create.mockReturnValue({ ...baseUser, role: Role.ADMIN });
-      mockRepo.save.mockResolvedValue({ ...baseUser, role: Role.ADMIN });
+      mockRepo.create.mockReturnValue({ ...baseUser, role: Role.CONDO_ADMIN });
+      mockRepo.save.mockResolvedValue({ ...baseUser, role: Role.CONDO_ADMIN });
 
-      const result = await service.create(adminDto, Role.SUPER_ADMIN);
+      const result = await service.create(adminDto, Role.PLATFORM_ADMIN);
 
-      expect(result.role).toBe(Role.ADMIN);
+      expect(result.role).toBe(Role.CONDO_ADMIN);
     });
 
     it('should throw ConflictException when unique role already exists', async () => {
@@ -150,7 +152,7 @@ describe('UsersService', () => {
         .mockResolvedValueOnce(baseUser);
 
       await expect(
-        service.create(presidenteDto, Role.SUPER_ADMIN),
+        service.create(presidenteDto, Role.PLATFORM_ADMIN),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -162,7 +164,7 @@ describe('UsersService', () => {
       mockRepo.findOne.mockResolvedValue(null);
 
       await expect(
-        service.update('bad-id', {} as UpdateUserDto, Role.ADMIN),
+        service.update('bad-id', {} as UpdateUserDto, Role.CONDO_ADMIN),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -170,7 +172,7 @@ describe('UsersService', () => {
       mockRepo.findOne.mockResolvedValue(baseUser);
 
       await expect(
-        service.update('uuid-1', { role: Role.ADMIN }, Role.ADMIN),
+        service.update('uuid-1', { role: Role.CONDO_ADMIN }, Role.CONDO_ADMIN),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -181,7 +183,7 @@ describe('UsersService', () => {
         .mockResolvedValueOnce(anotherUser); // email conflict check
 
       await expect(
-        service.update('uuid-1', { email: 'taken@test.com' }, Role.ADMIN),
+        service.update('uuid-1', { email: 'taken@test.com' }, Role.CONDO_ADMIN),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -190,7 +192,7 @@ describe('UsersService', () => {
       (bcrypt.hash as jest.Mock).mockResolvedValue('new_hashed');
       mockRepo.save.mockResolvedValue({ ...baseUser, password: 'new_hashed' });
 
-      await service.update('uuid-1', { password: 'newpass' }, Role.ADMIN);
+      await service.update('uuid-1', { password: 'newpass' }, Role.CONDO_ADMIN);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('newpass', 10);
     });
@@ -199,7 +201,7 @@ describe('UsersService', () => {
       mockRepo.findOne.mockResolvedValue(baseUser);
       mockRepo.save.mockResolvedValue({ ...baseUser, name: 'Nuevo' });
 
-      const result = await service.update('uuid-1', { name: 'Nuevo' }, Role.ADMIN);
+      const result = await service.update('uuid-1', { name: 'Nuevo' }, Role.CONDO_ADMIN);
 
       expect(result).not.toHaveProperty('password');
       expect(result.name).toBe('Nuevo');
@@ -225,13 +227,13 @@ describe('UsersService', () => {
     });
   });
 
-  // ─── createSuperAdmin ─────────────────────────────────────────────────────────
+  // ─── createPlatformAdmin ─────────────────────────────────────────────────────────
 
-  describe('createSuperAdmin', () => {
+  describe('createPlatformAdmin', () => {
     it('should not create if email already exists', async () => {
       mockRepo.findOne.mockResolvedValue(baseUser);
 
-      await service.createSuperAdmin('Super', 'Admin', 'juan@test.com', 'pass');
+      await service.createPlatformAdmin('Super', 'Admin', 'juan@test.com', 'pass');
 
       expect(mockRepo.save).not.toHaveBeenCalled();
     });
@@ -239,10 +241,10 @@ describe('UsersService', () => {
     it('should create super admin when email does not exist', async () => {
       mockRepo.findOne.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-      mockRepo.create.mockReturnValue({ ...baseUser, role: Role.SUPER_ADMIN });
-      mockRepo.save.mockResolvedValue({ ...baseUser, role: Role.SUPER_ADMIN });
+      mockRepo.create.mockReturnValue({ ...baseUser, role: Role.PLATFORM_ADMIN });
+      mockRepo.save.mockResolvedValue({ ...baseUser, role: Role.PLATFORM_ADMIN });
 
-      await service.createSuperAdmin('Super', 'Admin', 'super@test.com', 'pass');
+      await service.createPlatformAdmin('Super', 'Admin', 'super@test.com', 'pass');
 
       expect(mockRepo.save).toHaveBeenCalled();
     });

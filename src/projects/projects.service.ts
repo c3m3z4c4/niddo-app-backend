@@ -18,7 +18,7 @@ export class ProjectsService {
   ) {}
 
   async findAll(userRole: Role): Promise<Project[]> {
-    if (userRole === Role.VECINO) {
+    if (userRole === Role.RESIDENT) {
       return this.projectRepo.find({
         where: { visibleToVecinos: true },
         order: { updatedAt: 'DESC' },
@@ -30,7 +30,7 @@ export class ProjectsService {
   async findOne(id: string, userRole: Role): Promise<Project> {
     const project = await this.projectRepo.findOne({ where: { id } });
     if (!project) throw new NotFoundException(`Proyecto con id ${id} no encontrado`);
-    if (userRole === Role.VECINO && !project.visibleToVecinos) {
+    if (userRole === Role.RESIDENT && !project.visibleToVecinos) {
       throw new ForbiddenException('No tienes acceso a este proyecto');
     }
     return project;

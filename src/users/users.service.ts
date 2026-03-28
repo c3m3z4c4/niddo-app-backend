@@ -24,12 +24,15 @@ export class UsersService {
     private housesRepository: Repository<House>,
   ) {}
 
-  private async ensureUniqueRole(role: Role, excludeUserId?: string) {
+  private async ensureUniqueRole(role: Role, condominiumId: string | null, excludeUserId?: string) {
     if (!UNIQUE_ROLES.includes(role)) return;
-    const existing = await this.usersRepository.findOne({ where: { role } });
+    // Unique roles are scoped per condominium
+    const existing = await this.usersRepository.findOne({
+      where: { role, condominiumId: condominiumId ?? undefined },
+    });
     if (existing && existing.id !== excludeUserId) {
       throw new ConflictException(
-        `Ya existe un usuario con el rol ${role}`,
+        `Ya existe un usuario con el rol ${role} en este condominio`,
       );
     }
   }
@@ -61,8 +64,8 @@ export class UsersService {
     // Only SUPER_ADMIN can create other admins or super_admins
     if (
       dto.role &&
-      dto.role !== Role.VECINO &&
-      requestingRole !== Role.SUPER_ADMIN
+      dto.role !== Role.RESIDENT &&
+      requestingRole !== Role.PLATFORM_ADMIN
     ) {
       throw new ForbiddenException(
         'Solo el super administrador puede crear administradores',
@@ -78,7 +81,7 @@ export class UsersService {
       );
 
     if (dto.role) {
-      await this.ensureUniqueRole(dto.role);
+      await this.ensureUniqueRole(dto.role, (dto as any).condominiumId ?? null);
     }
 
     const hashed = await bcrypt.hash(dto.password, 10);
@@ -89,8 +92,9 @@ export class UsersService {
       password: hashed,
       phone: dto.phone,
       address: dto.address,
-      role: dto.role ?? Role.VECINO,
+      role: dto.role ?? Role.RESIDENT,
       houseId: dto.houseId || undefined,
+      condominiumId: (dto as any).condominiumId ?? null,
     });
 
     const saved = await this.usersRepository.save(user);
@@ -104,8 +108,8 @@ export class UsersService {
     // Only SUPER_ADMIN can change roles to ADMIN/SUPER_ADMIN
     if (
       dto.role &&
-      dto.role !== Role.VECINO &&
-      requestingRole !== Role.SUPER_ADMIN
+      dto.role !== Role.RESIDENT &&
+      requestingRole !== Role.PLATFORM_ADMIN
     ) {
       throw new ForbiddenException(
         'Solo el super administrador puede cambiar roles de administrador',
@@ -123,7 +127,7 @@ export class UsersService {
     }
 
     if (dto.role) {
-      await this.ensureUniqueRole(dto.role, id);
+      await this.ensureUniqueRole(dto.role, user.condominiumId, id);
     }
 
     if (dto.password) {
@@ -198,7 +202,7 @@ export class UsersService {
         email: dto.email,
         password: hashed,
         phone: dto.phone && dto.phone !== PLACEHOLDER ? dto.phone : undefined,
-        role: dto.role ?? Role.VECINO,
+        role: dto.role ?? Role.RESIDENT,
         houseId: houseId || undefined,
       });
       await this.usersRepository.save(user);
@@ -237,7 +241,7 @@ export class UsersService {
   }
 
   // Used internally for seeding
-  async createSuperAdmin(
+  async createPlatformAdmin(
     name: string,
     lastName: string,
     email: string,
@@ -252,20 +256,28 @@ export class UsersService {
       lastName,
       email,
       password: hashed,
-      role: Role.SUPER_ADMIN,
+      role: Role.PLATFORM_ADMIN,
       isActive: true,
     });
     await this.usersRepository.save(user);
   }
 
-  async createSeedVecino(
+  async createSeedResident(
     name: string,
     lastName: string,
     email: string,
     password: string,
+    condominiumId: string,
   ): Promise<void> {
     const exists = await this.usersRepository.findOne({ where: { email } });
-    if (exists) return;
+    if (exists) {
+      // Backfill condominiumId if missing
+      if (!exists.condominiumId) {
+        exists.condominiumId = condominiumId;
+        await this.usersRepository.save(exists);
+      }
+      return;
+    }
 
     const hashed = await bcrypt.hash(password, 10);
     const user = this.usersRepository.create({
@@ -273,8 +285,9 @@ export class UsersService {
       lastName,
       email,
       password: hashed,
-      role: Role.VECINO,
+      role: Role.RESIDENT,
       isActive: true,
+      condominiumId,
     });
     await this.usersRepository.save(user);
   }

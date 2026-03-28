@@ -23,7 +23,7 @@ const mockUsersService = { findAll: jest.fn() };
 const mockMailService = { sendMeetingInvitation: jest.fn() };
 const mockNotificationsService = { createForAllVecinos: jest.fn() };
 
-const baseMeeting: Meeting = {
+const baseMeeting = {
   id: 'meet-1',
   title: 'Asamblea general',
   description: 'Puntos del mes',
@@ -32,13 +32,13 @@ const baseMeeting: Meeting = {
   startTime: '18:00',
   endTime: '20:00',
   status: 'active',
-  cancelReason: null,
-  originalDate: null,
-  originalStartTime: null,
-  minutes: null,
-  minutesAgreements: null,
-  minutesResponsibles: null,
-  minutesClosingTime: null,
+  cancelReason: null as any,
+  originalDate: null as any,
+  originalStartTime: null as any,
+  minutes: null as any,
+  minutesAgreements: null as any,
+  minutesResponsibles: null as any,
+  minutesClosingTime: null as any,
   createdAt: new Date(),
   createdById: 'user-1',
 };

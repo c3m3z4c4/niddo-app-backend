@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Role } from '../auth/roles.enum';
 import { House } from '../houses/houses.entity';
+import { Condominium } from '../condominiums/condominium.entity';
 
 @Entity('users')
 export class User {
@@ -39,7 +40,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: Role,
-    default: Role.VECINO,
+    default: Role.RESIDENT,
   })
   role: Role;
 
@@ -55,6 +56,15 @@ export class User {
 
   @ManyToMany(() => House, (house) => house.residents)
   houses: House[];
+
+  // ── Multi-tenancy ─────────────────────────────────────────────────────────
+  /** null only for PLATFORM_ADMIN accounts */
+  @Column({ nullable: true })
+  condominiumId: string | null;
+
+  @ManyToOne(() => Condominium, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'condominiumId' })
+  condominium: Condominium;
 
   @CreateDateColumn()
   createdAt: Date;

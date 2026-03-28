@@ -36,7 +36,7 @@ export class MessagesService {
 
     // Broadcast to all active vecinos
     const vecinos = await this.usersRepo.find({
-      where: { role: Role.VECINO, isActive: true },
+      where: { role: Role.RESIDENT, isActive: true },
     });
 
     if (vecinos.length === 0) {

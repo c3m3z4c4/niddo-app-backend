@@ -19,7 +19,7 @@ const mockRepo = {
 const mockConflictService = { checkConflict: jest.fn() };
 const mockNotificationsService = { createForAllVecinos: jest.fn() };
 
-const baseEvent: GreenAreaEvent = {
+const baseEvent = {
   id: 'evt-1',
   title: 'Feria del vecino',
   greenArea: 'Parque Central',
@@ -28,9 +28,9 @@ const baseEvent: GreenAreaEvent = {
   endTime: '12:00',
   description: 'Evento familiar',
   status: 'active',
-  cancelReason: null,
-  originalDate: null,
-  originalStartTime: null,
+  cancelReason: null as any,
+  originalDate: null as any,
+  originalStartTime: null as any,
   createdAt: new Date(),
   createdById: 'user-1',
 };

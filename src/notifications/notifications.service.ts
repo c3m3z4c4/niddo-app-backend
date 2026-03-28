@@ -23,8 +23,8 @@ export class NotificationsService {
   ) {
     const users = await this.usersRepo.find({
       where: [
-        { role: Role.VECINO, isActive: true },
-        { role: Role.ADMIN, isActive: true },
+        { role: Role.RESIDENT, isActive: true },
+        { role: Role.CONDO_ADMIN, isActive: true },
       ],
     });
 

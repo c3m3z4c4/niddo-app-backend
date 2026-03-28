@@ -12,7 +12,7 @@ jest.mock('bcrypt', () => ({
 }));
 import * as bcrypt from 'bcrypt';
 
-const mockUser: User = {
+const mockUser = {
   id: 'uuid-1',
   name: 'Juan',
   lastName: 'Perez',
@@ -20,11 +20,13 @@ const mockUser: User = {
   password: 'hashed_password',
   phone: '1234567890',
   address: 'Calle 1',
-  role: Role.VECINO,
+  role: Role.RESIDENT,
   isActive: true,
-  house: null,
-  houseId: null,
+  house: null as any,
+  houseId: null as any,
   createdAt: new Date(),
+  condominiumId: null as any,
+  condominium: null as any,
 };
 
 const mockUsersRepository = {

@@ -11,7 +11,7 @@ import { Role } from '../auth/roles.enum';
 import { BackupService } from './backup.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SUPER_ADMIN, Role.ADMIN)
+@Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN)
 @Controller('backup')
 export class BackupController {
   constructor(private readonly backupService: BackupService) {}
