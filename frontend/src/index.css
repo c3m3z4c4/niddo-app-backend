@@ -10,98 +10,89 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Privadas del Parque - Design System */
+/* Niddo — Design System (default palette, overridden by BrandingContext) */
 
 @layer base {
   :root {
-    /* Brand Colors - HSL format */
-    --park-green: 147 65% 34%;
-    --park-green-light: 134 30% 69%;
-    --park-orange: 25 76% 57%;
-    --park-brown: 25 54% 39%;
-    --park-beige: 37 76% 71%;
-    --park-gray: 0 0% 18%;
-    --park-white: 60 7% 97%;
-
-    /* Semantic tokens */
-    --background: 60 7% 97%;
-    --foreground: 0 0% 18%;
+    /* Semantic tokens — Niddo Indigo + Coral */
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 18%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 18%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 147 65% 34%;
+    --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 134 30% 69%;
-    --secondary-foreground: 0 0% 18%;
+    --secondary: 239 50% 90%;
+    --secondary-foreground: 222 47% 11%;
 
-    --accent: 25 76% 57%;
+    --accent: 16 85% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 37 76% 71%;
-    --muted-foreground: 0 0% 35%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 134 30% 80%;
-    --input: 134 30% 85%;
-    --ring: 147 65% 34%;
+    --border: 220 14% 88%;
+    --input: 220 14% 90%;
+    --ring: 239 84% 67%;
 
     --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar-background: 147 65% 34%;
+    /* Sidebar — dark indigo */
+    --sidebar-background: 228 45% 18%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 147 65% 34%;
-    --sidebar-accent: 147 65% 28%;
+    --sidebar-primary-foreground: 239 84% 67%;
+    --sidebar-accent: 228 45% 24%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 147 65% 28%;
+    --sidebar-border: 228 45% 24%;
     --sidebar-ring: 0 0% 100%;
   }
 
   .dark {
-    --background: 0 0% 12%;
-    --foreground: 60 7% 97%;
+    --background: 222 47% 8%;
+    --foreground: 0 0% 97%;
 
-    --card: 0 0% 15%;
-    --card-foreground: 60 7% 97%;
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 97%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 60 7% 97%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 0 0% 97%;
 
-    --primary: 147 65% 40%;
+    --primary: 239 84% 72%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 134 30% 30%;
-    --secondary-foreground: 60 7% 97%;
+    --secondary: 239 30% 22%;
+    --secondary-foreground: 0 0% 97%;
 
-    --accent: 25 76% 50%;
+    --accent: 16 85% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 220 9% 60%;
 
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 147 65% 40%;
+    --border: 222 20% 22%;
+    --input: 222 20% 22%;
+    --ring: 239 84% 72%;
 
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 60 7% 97%;
-    --sidebar-primary: 147 65% 40%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 239 84% 72%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 18%;
-    --sidebar-accent-foreground: 60 7% 97%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 147 65% 40%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 222 20% 14%;
+    --sidebar-ring: 239 84% 72%;
   }
 }
 

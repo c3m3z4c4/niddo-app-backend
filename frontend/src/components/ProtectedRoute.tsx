@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
+import { UserRole, ADMIN_ROLES } from '@/types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -27,8 +27,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // Redirect to appropriate dashboard based on role
-    if (user.role === 'ADMIN') {
+    if (ADMIN_ROLES.includes(user.role)) {
       return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/" replace />;

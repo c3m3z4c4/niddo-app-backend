@@ -1,10 +1,19 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  TreePine, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  LayoutDashboard,
+  Calendar,
+  TreePine,
   Home as HomeIcon,
   Users,
   LogOut,
@@ -13,6 +22,8 @@ import {
   ChevronLeft,
   Sun,
   Moon,
+  Building2,
+  ChevronDown,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
@@ -28,6 +39,58 @@ const adminLinks = [
   { to: '/admin/casas', label: 'Casas', icon: HomeIcon },
   { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
 ];
+
+function CondoSelector({ collapsed = false }: { collapsed?: boolean }) {
+  const { user } = useAuth();
+  const { tenantId, setTenantId, condominiums, currentCondominium } = useTenant();
+
+  if (user?.role !== 'PLATFORM_ADMIN') return null;
+
+  const label = currentCondominium?.name ?? 'Todos los condominios';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size={collapsed ? 'icon' : 'sm'}
+          className={cn(
+            'text-sidebar-foreground hover:bg-sidebar-accent w-full',
+            collapsed ? 'justify-center px-2' : 'justify-between gap-2',
+          )}
+          title={collapsed ? label : undefined}
+        >
+          <Building2 className="h-4 w-4 shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 truncate text-left text-xs">{label}</span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+            </>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuLabel>Condominio activo</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className={cn(!tenantId && 'bg-accent/10 font-medium')}
+          onClick={() => setTenantId(null)}
+        >
+          Todos los condominios
+        </DropdownMenuItem>
+        {condominiums.map(c => (
+          <DropdownMenuItem
+            key={c.id}
+            className={cn(tenantId === c.id && 'bg-accent/10 font-medium')}
+            onClick={() => setTenantId(c.id)}
+          >
+            {c.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -49,9 +112,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b bg-card px-4 lg:hidden">
         <Link to="/admin" className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-            <img 
-              src={logo} 
-              alt="Privadas del Parque" 
+            <img
+              src={logo}
+              alt="Niddo"
               className="h-full w-full object-contain"
             />
           </div>
@@ -60,10 +123,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-1">
           <NotificationBell />
           <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
@@ -84,6 +147,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)} className="text-sidebar-foreground">
             <X className="h-5 w-5" />
           </Button>
+        </div>
+        <div className="px-4 pt-3 pb-1">
+          <CondoSelector />
         </div>
         <nav className="flex flex-col gap-1 p-4">
           {adminLinks.map(link => {
@@ -132,16 +198,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <div className="hidden lg:flex">
         {/* Desktop Sidebar */}
         <aside className={cn(
-          "sticky top-0 h-screen bg-sidebar transition-all duration-200",
+          "sticky top-0 h-screen bg-sidebar transition-all duration-200 flex flex-col",
           sidebarOpen ? "w-72" : "w-20"
         )}>
           <div className="flex h-20 items-center justify-between border-b border-sidebar-border px-4">
             {sidebarOpen ? (
               <Link to="/admin" className="flex items-center gap-3">
                 <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-                  <img 
-                    src={logo} 
-                    alt="Privadas del Parque" 
+                  <img
+                    src={logo}
+                    alt="Niddo"
                     className="h-full w-full object-contain"
                   />
                 </div>
@@ -150,9 +216,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             ) : (
               <Link to="/admin" className="flex items-center justify-center w-full">
                 <div className="h-12 w-12 overflow-hidden rounded-full bg-white p-1 shadow-sm">
-                  <img 
-                    src={logoSmall} 
-                    alt="Privadas del Parque" 
+                  <img
+                    src={logoSmall}
+                    alt="Niddo"
                     className="h-full w-full object-contain"
                   />
                 </div>
@@ -169,6 +235,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             >
               <ChevronLeft className={cn("h-5 w-5 transition-transform", !sidebarOpen && "rotate-180")} />
             </Button>
+          </div>
+
+          {/* Condo Selector */}
+          <div className={cn("px-4 pt-3 pb-1", !sidebarOpen && "px-2")}>
+            <CondoSelector collapsed={!sidebarOpen} />
           </div>
 
           <nav className="flex flex-col gap-1 p-4">
@@ -194,10 +265,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 border-t border-sidebar-border p-4">
+          <div className="mt-auto border-t border-sidebar-border p-4">
             {sidebarOpen && (
               <div className="mb-3 truncate text-sm text-sidebar-foreground/70">
-                {user?.name}
+                {user?.name} {user?.lastName}
               </div>
             )}
             <Button

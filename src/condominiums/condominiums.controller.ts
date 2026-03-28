@@ -26,6 +26,12 @@ export class CondominiumsController {
     return this.service.findBySlug(slug);
   }
 
+  /** Public: fetch branding by id — used after login when user has condominiumId */
+  @Get(':id/public')
+  findPublic(@Param('id') id: string) {
+    return this.service.findPublic(id);
+  }
+
   /** PLATFORM_ADMIN only: list all condominiums */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PLATFORM_ADMIN)

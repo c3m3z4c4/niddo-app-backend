@@ -33,6 +33,15 @@ export class CondominiumsService {
     return condo;
   }
 
+  async findPublic(id: string): Promise<Pick<Condominium, 'id' | 'name' | 'slug' | 'branding'>> {
+    const condo = await this.repo.findOne({
+      where: { id },
+      select: ['id', 'name', 'slug', 'branding'],
+    });
+    if (!condo) throw new NotFoundException(`Condominio ${id} no encontrado`);
+    return condo;
+  }
+
   async create(dto: CreateCondominiumDto): Promise<Condominium> {
     const existing = await this.repo.findOne({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException(`El slug "${dto.slug}" ya está en uso`);

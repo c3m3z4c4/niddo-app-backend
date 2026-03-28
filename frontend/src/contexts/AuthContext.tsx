@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/types';
-import { mockUsers, mockPasswords } from '@/data/mockData';
+import { api } from '@/lib/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -9,7 +9,8 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'privadas_auth_user';
+const TOKEN_KEY = 'niddo_token';
+const USER_KEY = 'niddo_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -19,18 +20,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Check for existing session on mount
-    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (storedUser) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const storedUser = localStorage.getItem(USER_KEY);
+    if (token && storedUser) {
       try {
         const user = JSON.parse(storedUser) as User;
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
+        setAuthState({ user, isAuthenticated: true, isLoading: false });
       } catch {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     } else {
@@ -39,36 +37,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const { data } = await api.post('/auth/login', { email, password });
+      const { access_token, user } = data;
 
-    const correctPassword = mockPasswords[email];
-    if (!correctPassword || correctPassword !== password) {
-      return { success: false, error: 'Credenciales incorrectas' };
+      localStorage.setItem(TOKEN_KEY, access_token);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+      setAuthState({ user, isAuthenticated: true, isLoading: false });
+      return { success: true };
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Credenciales inválidas';
+      return { success: false, error: message };
     }
-
-    const user = mockUsers.find(u => u.email === email);
-    if (!user) {
-      return { success: false, error: 'Usuario no encontrado' };
-    }
-
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-    setAuthState({
-      user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-
-    return { success: true };
   };
 
   const logout = () => {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('niddo_tenant_id');
+    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
   };
 
   return (
