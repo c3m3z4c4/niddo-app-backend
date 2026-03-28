@@ -4,12 +4,71 @@ import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { resolve } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { Client } from 'pg';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
 import { CondominiumsService } from './condominiums/condominiums.service';
 import { PRIVADAS_DEL_PARQUE_BRANDING } from './condominiums/condominium-branding.interface';
 
+/**
+ * Runs BEFORE TypeORM synchronize to migrate legacy role values.
+ * Old: SUPER_ADMIN → PLATFORM_ADMIN, ADMIN → CONDO_ADMIN, VECINO → RESIDENT
+ * TypeORM synchronize recreates the role enum type; this ensures the USING cast succeeds.
+ */
+async function migrateRolesIfNeeded(): Promise<void> {
+  const client = new Client({
+    host: process.env.DB_HOST,
+    port: +(process.env.DB_PORT ?? '5432'),
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  });
+
+  try {
+    await client.connect();
+
+    // Check whether legacy values still exist (no-op on fresh DBs or already migrated)
+    const { rows } = await client.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'role'
+      LIMIT 1
+    `);
+    if (rows.length === 0) { await client.end(); return; }
+
+    const legacy = await client.query(`
+      SELECT 1 FROM users
+      WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'VECINO')
+      LIMIT 1
+    `);
+    if (legacy.rows.length === 0) { await client.end(); return; }
+
+    console.log('🔄  Migrating legacy role values …');
+
+    // Add new enum values so the UPDATE succeeds (ADD VALUE is idempotent-ish)
+    for (const v of ['PLATFORM_ADMIN', 'CONDO_ADMIN', 'RESIDENT']) {
+      await client.query(`
+        DO $$ BEGIN
+          ALTER TYPE users_role_enum ADD VALUE IF NOT EXISTS '${v}';
+        EXCEPTION WHEN duplicate_object THEN null;
+        END $$;
+      `);
+    }
+
+    // Remap data
+    await client.query(`UPDATE users SET role = 'PLATFORM_ADMIN' WHERE role = 'SUPER_ADMIN'`);
+    await client.query(`UPDATE users SET role = 'CONDO_ADMIN'    WHERE role = 'ADMIN'`);
+    await client.query(`UPDATE users SET role = 'RESIDENT'       WHERE role = 'VECINO'`);
+
+    console.log('✅  Role migration complete');
+  } catch (e) {
+    console.warn('⚠️   migrateRolesIfNeeded skipped:', (e as Error).message);
+  } finally {
+    try { await client.end(); } catch { /* ignore */ }
+  }
+}
+
 async function bootstrap() {
+  await migrateRolesIfNeeded();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Serve uploaded files as static assets
