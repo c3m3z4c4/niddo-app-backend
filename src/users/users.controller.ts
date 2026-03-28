@@ -25,6 +25,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ImportUsersBodyDto } from './dto/import-users-body.dto';
+import { CurrentTenant } from '../common/decorators/tenant.decorator';
 
 const AVATARS_DIR = join(process.cwd(), 'uploads', 'avatars');
 
@@ -76,14 +77,14 @@ export class UsersController {
 
   @Get()
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@CurrentTenant() condominiumId: string | null) {
+    return this.usersService.findAll(condominiumId);
   }
 
   @Get(':id')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentTenant() condominiumId: string | null) {
+    return this.usersService.findOne(id, condominiumId);
   }
 
   @Post()

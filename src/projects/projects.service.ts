@@ -17,18 +17,24 @@ export class ProjectsService {
     private projectRepo: Repository<Project>,
   ) {}
 
-  async findAll(userRole: Role): Promise<Project[]> {
+  async findAll(userRole: Role, condominiumId: string | null): Promise<Project[]> {
+    const condoFilter = condominiumId ? { condominiumId } : {};
     if (userRole === Role.RESIDENT) {
       return this.projectRepo.find({
-        where: { visibleToVecinos: true },
+        where: { visibleToVecinos: true, ...condoFilter },
         order: { updatedAt: 'DESC' },
       });
     }
-    return this.projectRepo.find({ order: { updatedAt: 'DESC' } });
+    return this.projectRepo.find({
+      where: condoFilter,
+      order: { updatedAt: 'DESC' },
+    });
   }
 
-  async findOne(id: string, userRole: Role): Promise<Project> {
-    const project = await this.projectRepo.findOne({ where: { id } });
+  async findOne(id: string, userRole: Role, condominiumId: string | null): Promise<Project> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const project = await this.projectRepo.findOne({ where });
     if (!project) throw new NotFoundException(`Proyecto con id ${id} no encontrado`);
     if (userRole === Role.RESIDENT && !project.visibleToVecinos) {
       throw new ForbiddenException('No tienes acceso a este proyecto');
@@ -36,13 +42,19 @@ export class ProjectsService {
     return project;
   }
 
-  async create(dto: CreateProjectDto, userId: string): Promise<Project> {
-    const project = this.projectRepo.create({ ...dto, createdById: userId });
+  async create(dto: CreateProjectDto, userId: string, condominiumId: string | null): Promise<Project> {
+    const project = this.projectRepo.create({
+      ...dto,
+      createdById: userId,
+      condominiumId: condominiumId ?? undefined,
+    });
     return this.projectRepo.save(project);
   }
 
-  async update(id: string, dto: UpdateProjectDto): Promise<Project> {
-    const project = await this.projectRepo.findOne({ where: { id } });
+  async update(id: string, dto: UpdateProjectDto, condominiumId: string | null): Promise<Project> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const project = await this.projectRepo.findOne({ where });
     if (!project) throw new NotFoundException(`Proyecto con id ${id} no encontrado`);
     if ((dto as any).status === 'completed') {
       (dto as any).completionPercentage = 100;
@@ -51,14 +63,18 @@ export class ProjectsService {
     return this.projectRepo.save(project);
   }
 
-  async remove(id: string): Promise<void> {
-    const project = await this.projectRepo.findOne({ where: { id } });
+  async remove(id: string, condominiumId: string | null): Promise<void> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const project = await this.projectRepo.findOne({ where });
     if (!project) throw new NotFoundException(`Proyecto con id ${id} no encontrado`);
     await this.projectRepo.remove(project);
   }
 
-  async toggleVisibility(id: string): Promise<Project> {
-    const project = await this.projectRepo.findOne({ where: { id } });
+  async toggleVisibility(id: string, condominiumId: string | null): Promise<Project> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const project = await this.projectRepo.findOne({ where });
     if (!project) throw new NotFoundException(`Proyecto con id ${id} no encontrado`);
     project.visibleToVecinos = !project.visibleToVecinos;
     return this.projectRepo.save(project);

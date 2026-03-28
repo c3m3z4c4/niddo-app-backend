@@ -29,11 +29,14 @@ export class ConflictService {
     endTime?: string,
     excludeEventId?: string,
     excludeMeetingId?: string,
+    condominiumId?: string | null,
   ): Promise<boolean> {
     const newStart = this.toMinutes(startTime);
     const newEnd = this.getEndMinutes(startTime, endTime);
 
-    const meetings = await this.meetingsRepo.find({ where: { date } });
+    const baseWhere = condominiumId ? { date, condominiumId } : { date };
+
+    const meetings = await this.meetingsRepo.find({ where: baseWhere });
     for (const m of meetings) {
       if (excludeMeetingId && m.id === excludeMeetingId) continue;
       const mStart = this.toMinutes(m.startTime);
@@ -41,7 +44,7 @@ export class ConflictService {
       if (newStart < mEnd && newEnd > mStart) return true;
     }
 
-    const events = await this.eventsRepo.find({ where: { date } });
+    const events = await this.eventsRepo.find({ where: baseWhere });
     for (const e of events) {
       if (excludeEventId && e.id === excludeEventId) continue;
       const eStart = this.toMinutes(e.startTime);

@@ -20,22 +20,30 @@ export class EventsService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async findAll(): Promise<GreenAreaEvent[]> {
-    return this.eventsRepo.find({ order: { date: 'ASC', startTime: 'ASC' } });
+  async findAll(condominiumId: string | null): Promise<GreenAreaEvent[]> {
+    return this.eventsRepo.find({
+      where: condominiumId ? { condominiumId } : {},
+      order: { date: 'ASC', startTime: 'ASC' },
+    });
   }
 
-  async findOne(id: string): Promise<GreenAreaEvent> {
-    const event = await this.eventsRepo.findOne({ where: { id } });
+  async findOne(id: string, condominiumId: string | null): Promise<GreenAreaEvent> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const event = await this.eventsRepo.findOne({ where });
     if (!event)
       throw new NotFoundException(`Evento con id ${id} no encontrado`);
     return event;
   }
 
-  async create(dto: CreateEventDto, userId?: string): Promise<GreenAreaEvent> {
+  async create(dto: CreateEventDto, userId?: string, condominiumId?: string | null): Promise<GreenAreaEvent> {
     const conflict = await this.conflictService.checkConflict(
       dto.date,
       dto.startTime,
       dto.endTime,
+      undefined,
+      undefined,
+      condominiumId,
     );
     if (conflict)
       throw new ConflictException(
@@ -45,12 +53,13 @@ export class EventsService {
     const event = this.eventsRepo.create({
       ...dto,
       createdById: userId,
+      condominiumId: condominiumId ?? undefined,
     });
     return this.eventsRepo.save(event);
   }
 
-  async update(id: string, dto: UpdateEventDto): Promise<GreenAreaEvent> {
-    const event = await this.findOne(id);
+  async update(id: string, dto: UpdateEventDto, condominiumId: string | null): Promise<GreenAreaEvent> {
+    const event = await this.findOne(id, condominiumId);
 
     const date = dto.date ?? event.date;
     const startTime = dto.startTime ?? event.startTime;
@@ -62,6 +71,7 @@ export class EventsService {
       endTime,
       id,
       undefined,
+      condominiumId,
     );
     if (conflict)
       throw new ConflictException(
@@ -72,13 +82,13 @@ export class EventsService {
     return this.eventsRepo.save(event);
   }
 
-  async remove(id: string): Promise<void> {
-    const event = await this.findOne(id);
+  async remove(id: string, condominiumId: string | null): Promise<void> {
+    const event = await this.findOne(id, condominiumId);
     await this.eventsRepo.remove(event);
   }
 
-  async cancel(id: string, reason?: string): Promise<GreenAreaEvent> {
-    const event = await this.findOne(id);
+  async cancel(id: string, reason?: string, condominiumId?: string | null): Promise<GreenAreaEvent> {
+    const event = await this.findOne(id, condominiumId ?? null);
     event.status = 'cancelled';
     if (reason) event.cancelReason = reason;
     const saved = await this.eventsRepo.save(event);
@@ -90,6 +100,7 @@ export class EventsService {
         : `El evento del ${event.date} ha sido cancelado.`,
       id,
       'event',
+      condominiumId ?? null,
     );
     return saved;
   }
@@ -97,8 +108,9 @@ export class EventsService {
   async postpone(
     id: string,
     dto: { date: string; startTime: string; endTime?: string },
+    condominiumId?: string | null,
   ): Promise<GreenAreaEvent> {
-    const event = await this.findOne(id);
+    const event = await this.findOne(id, condominiumId ?? null);
     event.originalDate = event.originalDate ?? event.date;
     event.originalStartTime = event.originalStartTime ?? event.startTime;
     event.date = dto.date;
@@ -112,6 +124,7 @@ export class EventsService {
       `El evento ha sido reprogramado al ${dto.date} a las ${dto.startTime}.`,
       id,
       'event',
+      condominiumId ?? null,
     );
     return saved;
   }

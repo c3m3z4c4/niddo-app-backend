@@ -14,16 +14,22 @@ export class RsvpsService {
     private usersRepo: Repository<User>,
   ) {}
 
-  async findAllForUser(userId: string): Promise<Rsvp[]> {
-    return this.rsvpsRepo.find({ where: { userId } });
+  async findAllForUser(userId: string, condominiumId: string | null): Promise<Rsvp[]> {
+    const where: any = { userId };
+    if (condominiumId) where.condominiumId = condominiumId;
+    return this.rsvpsRepo.find({ where });
   }
 
-  async findAllForTarget(targetType: string, targetId: string): Promise<Rsvp[]> {
-    return this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
+  async findAllForTarget(targetType: string, targetId: string, condominiumId: string | null): Promise<Rsvp[]> {
+    const where: any = { targetType: targetType as any, targetId };
+    if (condominiumId) where.condominiumId = condominiumId;
+    return this.rsvpsRepo.find({ where });
   }
 
-  async findAllForTargetWithUsers(targetType: string, targetId: string): Promise<any[]> {
-    const rsvps = await this.rsvpsRepo.find({ where: { targetType: targetType as any, targetId } });
+  async findAllForTargetWithUsers(targetType: string, targetId: string, condominiumId: string | null): Promise<any[]> {
+    const where: any = { targetType: targetType as any, targetId };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const rsvps = await this.rsvpsRepo.find({ where });
     const userIds = [...new Set(rsvps.map(r => r.userId))];
     const users = await this.usersRepo.find({ where: { id: In(userIds) }, relations: ['house'] });
     const usersMap = new Map(users.map(u => [u.id, {
@@ -37,22 +43,26 @@ export class RsvpsService {
     return rsvps.map(r => ({ ...r, user: usersMap.get(r.userId) }));
   }
 
-  async upsert(userId: string, dto: UpsertRsvpDto): Promise<Rsvp> {
-    const existing = await this.rsvpsRepo.findOne({
-      where: { userId, targetType: dto.targetType, targetId: dto.targetId },
-    });
+  async upsert(userId: string, dto: UpsertRsvpDto, condominiumId: string | null): Promise<Rsvp> {
+    const where: any = { userId, targetType: dto.targetType, targetId: dto.targetId };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const existing = await this.rsvpsRepo.findOne({ where });
     if (existing) {
       existing.status = dto.status;
       return this.rsvpsRepo.save(existing);
     }
-    const rsvp = this.rsvpsRepo.create({ userId, ...dto });
+    const rsvp = this.rsvpsRepo.create({
+      userId,
+      ...dto,
+      condominiumId: condominiumId ?? undefined,
+    });
     return this.rsvpsRepo.save(rsvp);
   }
 
-  async remove(userId: string, targetType: string, targetId: string): Promise<void> {
-    const rsvp = await this.rsvpsRepo.findOne({
-      where: { userId, targetType: targetType as any, targetId },
-    });
+  async remove(userId: string, targetType: string, targetId: string, condominiumId: string | null): Promise<void> {
+    const where: any = { userId, targetType: targetType as any, targetId };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const rsvp = await this.rsvpsRepo.findOne({ where });
     if (rsvp) await this.rsvpsRepo.remove(rsvp);
   }
 }

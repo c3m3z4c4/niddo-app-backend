@@ -17,6 +17,7 @@ import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 import { ImportHousesDto } from './dto/import-houses.dto';
 import { AssignResidentsDto } from './dto/assign-residents.dto';
+import { CurrentTenant } from '../common/decorators/tenant.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('houses')
@@ -25,43 +26,51 @@ export class HousesController {
 
   @Get()
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  findAll() {
-    return this.housesService.findAll();
+  findAll(@CurrentTenant() condominiumId: string | null) {
+    return this.housesService.findAll(condominiumId);
   }
 
   @Get(':id')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  findOne(@Param('id') id: string) {
-    return this.housesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentTenant() condominiumId: string | null) {
+    return this.housesService.findOne(id, condominiumId);
   }
 
   @Post()
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  create(@Body() dto: CreateHouseDto) {
-    return this.housesService.create(dto);
+  create(@Body() dto: CreateHouseDto, @CurrentTenant() condominiumId: string | null) {
+    return this.housesService.create(dto, condominiumId);
   }
 
   @Patch(':id')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  update(@Param('id') id: string, @Body() dto: UpdateHouseDto) {
-    return this.housesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateHouseDto,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.housesService.update(id, dto, condominiumId);
   }
 
   @Patch(':id/residents')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  assignResidents(@Param('id') id: string, @Body() dto: AssignResidentsDto) {
-    return this.housesService.assignResidents(id, dto.userIds);
+  assignResidents(
+    @Param('id') id: string,
+    @Body() dto: AssignResidentsDto,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.housesService.assignResidents(id, dto.userIds, condominiumId);
   }
 
   @Post('import')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  importHouses(@Body() dto: ImportHousesDto) {
-    return this.housesService.importHouses(dto.houses);
+  importHouses(@Body() dto: ImportHousesDto, @CurrentTenant() condominiumId: string | null) {
+    return this.housesService.importHouses(dto.houses, condominiumId);
   }
 
   @Delete(':id')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  remove(@Param('id') id: string) {
-    return this.housesService.remove(id);
+  remove(@Param('id') id: string, @CurrentTenant() condominiumId: string | null) {
+    return this.housesService.remove(id, condominiumId);
   }
 }

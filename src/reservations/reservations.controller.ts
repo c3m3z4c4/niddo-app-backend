@@ -17,6 +17,7 @@ import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReviewReservationDto } from './dto/review-reservation.dto';
 import { CloseReservationDto } from './dto/close-reservation.dto';
+import { CurrentTenant } from '../common/decorators/tenant.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('reservations')
@@ -24,13 +25,17 @@ export class ReservationsController {
   constructor(private readonly service: ReservationsService) {}
 
   @Post()
-  create(@Body() dto: CreateReservationDto, @Request() req) {
-    return this.service.create(dto, req.user);
+  create(
+    @Body() dto: CreateReservationDto,
+    @Request() req,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.service.create(dto, req.user, condominiumId);
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.service.findAll(req.user);
+  findAll(@Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.service.findAll(req.user, condominiumId);
   }
 
   @Patch(':id/review')
@@ -39,8 +44,9 @@ export class ReservationsController {
     @Param('id') id: string,
     @Body() dto: ReviewReservationDto,
     @Request() req,
+    @CurrentTenant() condominiumId: string | null,
   ) {
-    return this.service.review(id, dto, req.user);
+    return this.service.review(id, dto, req.user, condominiumId);
   }
 
   @Patch(':id/close')
@@ -49,12 +55,17 @@ export class ReservationsController {
     @Param('id') id: string,
     @Body() dto: CloseReservationDto,
     @Request() req,
+    @CurrentTenant() condominiumId: string | null,
   ) {
-    return this.service.close(id, dto, req.user);
+    return this.service.close(id, dto, req.user, condominiumId);
   }
 
   @Delete(':id')
-  cancel(@Param('id') id: string, @Request() req) {
-    return this.service.cancel(id, req.user);
+  cancel(
+    @Param('id') id: string,
+    @Request() req,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.service.cancel(id, req.user, condominiumId);
   }
 }

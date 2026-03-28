@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
+import { CurrentTenant } from '../common/decorators/tenant.decorator';
 import { DuesService } from './dues.service';
 import { CreateDuesConfigDto } from './dto/create-dues-config.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -32,39 +33,39 @@ export class DuesController {
   constructor(private readonly duesService: DuesService) {}
 
   @Get('config')
-  getConfig() {
-    return this.duesService.getConfig();
+  getConfig(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getConfig(condominiumId);
   }
 
   @Post('config')
   @Roles(Role.PLATFORM_ADMIN)
-  setConfig(@Body() dto: CreateDuesConfigDto, @Request() req) {
-    return this.duesService.setConfig(dto, req.user.role);
+  setConfig(@Body() dto: CreateDuesConfigDto, @Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.setConfig(dto, req.user.role, condominiumId);
   }
 
   @Get('summary')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  getSummary(@Query('month') month: string, @Query('year') year: string) {
-    return this.duesService.getSummary(Number(month), Number(year));
+  getSummary(@Query('month') month: string, @Query('year') year: string, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getSummary(Number(month), Number(year), condominiumId);
   }
 
   // ── Promotions (MUST be before :id routes) ──────────────────
 
   @Get('promotions')
-  getActivePromotions() {
-    return this.duesService.getActivePromotions();
+  getActivePromotions(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getActivePromotions(condominiumId);
   }
 
   @Get('promotions/all')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  getAllPromotions() {
-    return this.duesService.getAllPromotions();
+  getAllPromotions(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getAllPromotions(condominiumId);
   }
 
   @Post('promotions')
   @Roles(Role.PLATFORM_ADMIN)
-  createPromotion(@Body() dto: CreatePromotionDto, @Request() req) {
-    return this.duesService.createPromotion(dto, req.user.role);
+  createPromotion(@Body() dto: CreatePromotionDto, @Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.createPromotion(dto, req.user.role, condominiumId);
   }
 
   @Patch('promotions/:id')
@@ -86,14 +87,14 @@ export class DuesController {
   // ── Payments ────────────────────────────────────────────────
 
   @Get()
-  findAll(@Request() req) {
-    return this.duesService.findAll(req.user);
+  findAll(@Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.findAll(req.user, condominiumId);
   }
 
   @Post('generate')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  generateMonthlyDues(@Body() dto: GenerateDuesDto) {
-    return this.duesService.generateMonthlyDues(dto.month, dto.year);
+  generateMonthlyDues(@Body() dto: GenerateDuesDto, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.generateMonthlyDues(dto.month, dto.year, condominiumId);
   }
 
   @Post('import')
@@ -104,8 +105,8 @@ export class DuesController {
 
   @Delete('all')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN)
-  deleteAllPayments(@Request() req) {
-    return this.duesService.deleteAllPayments(req.user.role);
+  deleteAllPayments(@Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.deleteAllPayments(req.user.role, condominiumId);
   }
 
   @Post()
@@ -124,41 +125,41 @@ export class DuesController {
 
   @Get('policy')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  getPolicy() {
-    return this.duesService.getPolicy();
+  getPolicy(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getPolicy(condominiumId);
   }
 
   @Post('policy')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.TESORERO)
-  setPolicy(@Body() dto: CreateDuesPolicyDto) {
-    return this.duesService.setPolicy(dto);
+  setPolicy(@Body() dto: CreateDuesPolicyDto, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.setPolicy(dto, condominiumId);
   }
 
   @Get('debtors')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
-  getDebtors() {
-    return this.duesService.getDebtors();
+  getDebtors(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getDebtors(condominiumId);
   }
 
   // ── Apply Promotion ────────────────────────────────────────
 
   @Post('promotions/apply')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
-  applyPromotion(@Body() dto: ApplyPromotionDto, @Request() req) {
-    return this.duesService.applyPromotion(dto, req.user.role);
+  applyPromotion(@Body() dto: ApplyPromotionDto, @Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.applyPromotion(dto, req.user.role, condominiumId);
   }
 
   // ── Extraordinary Income ───────────────────────────────────
 
   @Get('extraordinary')
-  findAllExtraordinary(@Request() req) {
-    return this.duesService.findAllExtraordinary(req.user);
+  findAllExtraordinary(@Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.findAllExtraordinary(req.user, condominiumId);
   }
 
   @Post('extraordinary')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE)
-  createExtraordinary(@Body() dto: CreateExtraordinaryDto, @Request() req) {
-    return this.duesService.createExtraordinary(dto, req.user.userId);
+  createExtraordinary(@Body() dto: CreateExtraordinaryDto, @Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.createExtraordinary(dto, req.user.userId, condominiumId);
   }
 
   @Patch('extraordinary/:id')

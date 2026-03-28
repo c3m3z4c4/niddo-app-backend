@@ -43,17 +43,22 @@ export class UsersService {
     return rest;
   }
 
-  async findAll() {
+  async findAll(condominiumId?: string | null) {
+    const where: any = {};
+    if (condominiumId) where.condominiumId = condominiumId;
     const users = await this.usersRepository.find({
+      where: Object.keys(where).length > 0 ? where : undefined,
       relations: ['house'],
       order: { createdAt: 'DESC' },
     });
     return users.map(this.sanitize);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, condominiumId?: string | null) {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
     const user = await this.usersRepository.findOne({
-      where: { id },
+      where,
       relations: ['house'],
     });
     if (!user) throw new NotFoundException(`Usuario con id ${id} no encontrado`);

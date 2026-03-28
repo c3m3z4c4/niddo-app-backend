@@ -22,7 +22,7 @@ export class ReservationsService {
     private readonly duesRepo: Repository<DuesPayment>,
   ) {}
 
-  async create(dto: CreateReservationDto, user: User): Promise<GreenAreaReservation> {
+  async create(dto: CreateReservationDto, user: User, condominiumId: string | null): Promise<GreenAreaReservation> {
     // Check for pending dues — admin/mesa directiva are exempt
     const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
     if (!adminRoles.includes(user.role as Role)) {
@@ -40,19 +40,25 @@ export class ReservationsService {
       ...dto,
       userId: user.id,
       status: 'pending',
+      condominiumId: condominiumId ?? undefined,
     });
     return this.repo.save(reservation);
   }
 
-  async findAll(user: User): Promise<GreenAreaReservation[]> {
+  async findAll(user: User, condominiumId: string | null): Promise<GreenAreaReservation[]> {
     const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];
     const isAdmin = adminRoles.includes(user.role as Role);
 
+    const condoFilter = condominiumId ? { condominiumId } : {};
+
     if (isAdmin) {
-      return this.repo.find({ order: { createdAt: 'DESC' } });
+      return this.repo.find({
+        where: condoFilter,
+        order: { createdAt: 'DESC' },
+      });
     }
     return this.repo.find({
-      where: { userId: user.id },
+      where: { userId: user.id, ...condoFilter },
       order: { createdAt: 'DESC' },
     });
   }
@@ -61,8 +67,11 @@ export class ReservationsService {
     id: string,
     dto: ReviewReservationDto,
     reviewer: User,
+    condominiumId: string | null,
   ): Promise<GreenAreaReservation> {
-    const reservation = await this.repo.findOne({ where: { id } });
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const reservation = await this.repo.findOne({ where });
     if (!reservation) throw new NotFoundException('Solicitud no encontrada');
     if (reservation.status !== 'pending') {
       throw new ForbiddenException('Solo se pueden revisar solicitudes pendientes');
@@ -78,8 +87,11 @@ export class ReservationsService {
     id: string,
     dto: CloseReservationDto,
     closer: User,
+    condominiumId: string | null,
   ): Promise<GreenAreaReservation> {
-    const reservation = await this.repo.findOne({ where: { id } });
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const reservation = await this.repo.findOne({ where });
     if (!reservation) throw new NotFoundException('Solicitud no encontrada');
     if (reservation.status !== 'approved') {
       throw new ForbiddenException('Solo se pueden cerrar reservaciones aprobadas');
@@ -95,8 +107,10 @@ export class ReservationsService {
     return this.repo.save(reservation);
   }
 
-  async cancel(id: string, user: User): Promise<void> {
-    const reservation = await this.repo.findOne({ where: { id } });
+  async cancel(id: string, user: User, condominiumId: string | null): Promise<void> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const reservation = await this.repo.findOne({ where });
     if (!reservation) throw new NotFoundException('Solicitud no encontrada');
 
     const adminRoles: Role[] = [Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO];

@@ -49,14 +49,14 @@ export class DuesService {
     private houseRepo: Repository<House>,
   ) {}
 
-  async getConfig(): Promise<DuesConfig | null> {
+  async getConfig(condominiumId?: string | null): Promise<DuesConfig | null> {
     return this.configRepo.findOne({
-      where: {},
+      where: condominiumId ? { condominiumId } : {},
       order: { effectiveFrom: 'DESC' },
     });
   }
 
-  async setConfig(dto: CreateDuesConfigDto, requestingRole: Role): Promise<DuesConfig> {
+  async setConfig(dto: CreateDuesConfigDto, requestingRole: Role, condominiumId?: string | null): Promise<DuesConfig> {
     if (requestingRole !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Solo SUPER_ADMIN puede configurar el monto de cuotas');
     }
@@ -67,6 +67,7 @@ export class DuesService {
     const config = this.configRepo.create({
       amount: dto.amount,
       effectiveFrom,
+      condominiumId: condominiumId ?? undefined,
     });
     return this.configRepo.save(config);
   }
@@ -74,17 +75,19 @@ export class DuesService {
   async generateMonthlyDues(
     month: number,
     year: number,
+    condominiumId?: string | null,
   ): Promise<{ generated: number; exempt: number }> {
-    const config = await this.getConfig();
+    const config = await this.getConfig(condominiumId);
     if (!config) {
       throw new NotFoundException('No hay configuración de cuotas. Configure el monto primero.');
     }
 
-    const activeUsers = await this.userRepo.find({
-      where: { isActive: true },
-    });
+    const userWhere: any = { isActive: true };
+    if (condominiumId) userWhere.condominiumId = condominiumId;
+    const activeUsers = await this.userRepo.find({ where: userWhere });
 
-    const allHouses = await this.houseRepo.find({ select: ['id', 'type'] as any });
+    const houseWhere: any = condominiumId ? { condominiumId } : {};
+    const allHouses = await this.houseRepo.find({ where: houseWhere, select: ['id', 'type'] as any });
     const houseTypeMap = new Map(allHouses.map(h => [h.id, h.type]));
 
     let generated = 0;
@@ -125,7 +128,7 @@ export class DuesService {
     return { generated, exempt };
   }
 
-  async findAll(user: { userId: string; role: Role }): Promise<DuesPayment[]> {
+  async findAll(user: { userId: string; role: Role }, condominiumId?: string | null): Promise<DuesPayment[]> {
     const canSeeAll = [
       Role.PLATFORM_ADMIN,
       Role.CONDO_ADMIN,
@@ -135,13 +138,16 @@ export class DuesService {
     ].includes(user.role);
 
     if (canSeeAll) {
+      const where: any = {};
+      if (condominiumId) where.condominiumId = condominiumId;
       return this.paymentRepo.find({
+        where: Object.keys(where).length > 0 ? where : undefined,
         relations: ['user', 'house'],
         order: { year: 'DESC', month: 'DESC' },
       });
     }
 
-    // VECINO: return payments for their assigned house
+    // RESIDENT: return payments for their assigned house
     const userRecord = await this.userRepo.findOne({ where: { id: user.userId } });
 
     if (userRecord?.houseId) {
@@ -264,10 +270,10 @@ export class DuesService {
     return this.paymentRepo.save(payment);
   }
 
-  async getSummary(month: number, year: number) {
-    const payments = await this.paymentRepo.find({
-      where: { month, year },
-    });
+  async getSummary(month: number, year: number, condominiumId?: string | null) {
+    const where: any = { month, year };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const payments = await this.paymentRepo.find({ where });
 
     const total = payments.length;
     const paid = payments.filter((p) => p.status === 'paid').length;
@@ -283,37 +289,50 @@ export class DuesService {
     return { total, paid, pending, exempt, totalAmount, collectedAmount };
   }
 
-  async deleteAllPayments(requestingRole: Role): Promise<{ deleted: number }> {
+  async deleteAllPayments(requestingRole: Role, condominiumId?: string | null): Promise<{ deleted: number }> {
     if (![Role.PLATFORM_ADMIN, Role.CONDO_ADMIN].includes(requestingRole)) {
       throw new ForbiddenException('Solo SUPER_ADMIN o ADMIN pueden eliminar todos los pagos');
     }
-    const all = await this.paymentRepo.find();
+    const where: any = {};
+    if (condominiumId) where.condominiumId = condominiumId;
+    const all = await this.paymentRepo.find({ where: Object.keys(where).length > 0 ? where : undefined });
     await this.paymentRepo.remove(all);
     return { deleted: all.length };
   }
 
   // ── Promotions ──────────────────────────────────────────────
 
-  async getActivePromotions(): Promise<DuesPromotion[]> {
+  async getActivePromotions(condominiumId?: string | null): Promise<DuesPromotion[]> {
     const today = new Date().toISOString().split('T')[0];
-    return this.promotionRepo
+    const qb = this.promotionRepo
       .createQueryBuilder('p')
       .where('p.isActive = :active', { active: true })
-      .andWhere('p.validTo >= :today', { today })
-      .orderBy('p.monthCount', 'ASC')
-      .getMany();
+      .andWhere('p.validTo >= :today', { today });
+    if (condominiumId) {
+      qb.andWhere('p.condominiumId = :condominiumId', { condominiumId });
+    }
+    return qb.orderBy('p.monthCount', 'ASC').getMany();
   }
 
-  async getAllPromotions(): Promise<DuesPromotion[]> {
-    return this.promotionRepo.find({ order: { createdAt: 'DESC' } });
+  async getAllPromotions(condominiumId?: string | null): Promise<DuesPromotion[]> {
+    const where: any = {};
+    if (condominiumId) where.condominiumId = condominiumId;
+    return this.promotionRepo.find({
+      where: Object.keys(where).length > 0 ? where : undefined,
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async createPromotion(
     dto: CreatePromotionDto,
     role: Role,
+    condominiumId?: string | null,
   ): Promise<DuesPromotion> {
     if (role !== Role.PLATFORM_ADMIN) throw new ForbiddenException();
-    return this.promotionRepo.save(this.promotionRepo.create(dto));
+    return this.promotionRepo.save(this.promotionRepo.create({
+      ...dto,
+      condominiumId: condominiumId ?? undefined,
+    }));
   }
 
   async updatePromotion(
@@ -337,12 +356,13 @@ export class DuesService {
 
   // ── Policy ──────────────────────────────────────────────────
 
-  async getPolicy(): Promise<DuesPolicy | null> {
-    return this.policyRepo.findOne({ where: {}, order: { createdAt: 'DESC' } });
+  async getPolicy(condominiumId?: string | null): Promise<DuesPolicy | null> {
+    const where: any = condominiumId ? { condominiumId } : {};
+    return this.policyRepo.findOne({ where, order: { createdAt: 'DESC' } });
   }
 
-  async setPolicy(dto: CreateDuesPolicyDto): Promise<DuesPolicy> {
-    const policy = this.policyRepo.create(dto);
+  async setPolicy(dto: CreateDuesPolicyDto, condominiumId?: string | null): Promise<DuesPolicy> {
+    const policy = this.policyRepo.create({ ...dto, condominiumId: condominiumId ?? undefined });
     return this.policyRepo.save(policy);
   }
 
@@ -351,6 +371,7 @@ export class DuesService {
   async applyPromotion(
     dto: ApplyPromotionDto,
     requestingRole: Role,
+    condominiumId?: string | null,
   ): Promise<{ applied: number }> {
     if (![Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO, Role.PRESIDENTE].includes(requestingRole)) {
       throw new ForbiddenException();
@@ -366,7 +387,7 @@ export class DuesService {
     const houseUsers = await this.userRepo.find({ where: { houseId: dto.houseId, isActive: true } });
     if (!houseUsers.length) throw new NotFoundException('No hay usuarios activos en esta casa');
 
-    const config = await this.getConfig();
+    const config = await this.getConfig(condominiumId);
     const baseAmount = config ? Number(config.amount) : 0;
     const discountedAmount = baseAmount * (1 - promo.discountPercentage / 100);
 
@@ -404,6 +425,7 @@ export class DuesService {
           payment.status = 'paid';
           payment.paidAt = paidAt;
           payment.notes = `Promoción: ${promo.name}`;
+          if (condominiumId) (payment as any).condominiumId = condominiumId;
           await this.paymentRepo.save(payment);
         }
         applied++;
@@ -415,13 +437,16 @@ export class DuesService {
 
   // ── Extraordinary Income ─────────────────────────────────────
 
-  async findAllExtraordinary(user: { userId: string; role: Role }): Promise<ExtraordinaryIncome[]> {
+  async findAllExtraordinary(user: { userId: string; role: Role }, condominiumId?: string | null): Promise<ExtraordinaryIncome[]> {
     const isAdmin = [
       Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO,
     ].includes(user.role);
 
     if (isAdmin) {
+      const where: any = {};
+      if (condominiumId) where.condominiumId = condominiumId;
       return this.extraordinaryRepo.find({
+        where: Object.keys(where).length > 0 ? where : undefined,
         relations: ['house'],
         order: { date: 'DESC' },
       });
@@ -441,6 +466,7 @@ export class DuesService {
   async createExtraordinary(
     dto: CreateExtraordinaryDto,
     createdById: string,
+    condominiumId?: string | null,
   ): Promise<ExtraordinaryIncome> {
     if (dto.houseId) {
       const house = await this.houseRepo.findOne({ where: { id: dto.houseId } });
@@ -455,6 +481,7 @@ export class DuesService {
       houseId: dto.houseId,
       notes: dto.notes,
       createdById,
+      condominiumId: condominiumId ?? undefined,
     });
     return this.extraordinaryRepo.save(record);
   }
@@ -509,13 +536,15 @@ export class DuesService {
     return { payments, extraordinary };
   }
 
-  async getDebtors() {
-    const policy = await this.getPolicy();
+  async getDebtors(condominiumId?: string | null) {
+    const policy = await this.getPolicy(condominiumId);
     const mobileLock = policy?.mobileLockMonths ?? 1;
     const cardLock = policy?.cardLockMonths ?? 3;
 
+    const pendingWhere: any = { status: 'pending' };
+    if (condominiumId) pendingWhere.condominiumId = condominiumId;
     const pending = await this.paymentRepo.find({
-      where: { status: 'pending' },
+      where: pendingWhere,
       relations: ['user', 'house'],
       order: { year: 'DESC', month: 'DESC' },
     });

@@ -16,7 +16,7 @@ export class MessagesService {
     private readonly usersRepo: Repository<User>,
   ) {}
 
-  async send(senderId: string, dto: CreateMessageDto) {
+  async send(senderId: string, dto: CreateMessageDto, condominiumId: string | null) {
     const { recipientId, subject, body } = dto;
 
     if (recipientId) {
@@ -30,14 +30,15 @@ export class MessagesService {
         body,
         isBroadcast: false,
         broadcastId: null,
+        condominiumId: condominiumId ?? undefined,
       });
       return this.messagesRepo.save(message);
     }
 
     // Broadcast to all active vecinos
-    const vecinos = await this.usersRepo.find({
-      where: { role: Role.RESIDENT, isActive: true },
-    });
+    const vecinoWhere: any = { role: Role.RESIDENT, isActive: true };
+    if (condominiumId) vecinoWhere.condominiumId = condominiumId;
+    const vecinos = await this.usersRepo.find({ where: vecinoWhere });
 
     if (vecinos.length === 0) {
       return { sent: 0 };
@@ -52,6 +53,7 @@ export class MessagesService {
         body,
         isBroadcast: true,
         broadcastId,
+        condominiumId: condominiumId ?? undefined,
       }),
     );
 
@@ -59,18 +61,22 @@ export class MessagesService {
     return { sent: messages.length, broadcastId };
   }
 
-  async getInbox(userId: string) {
+  async getInbox(userId: string, condominiumId: string | null) {
+    const where: any = { recipientId: userId };
+    if (condominiumId) where.condominiumId = condominiumId;
     return this.messagesRepo.find({
-      where: { recipientId: userId },
+      where,
       relations: ['sender'],
       order: { createdAt: 'DESC' },
       take: 100,
     });
   }
 
-  async getSent(senderId: string) {
+  async getSent(senderId: string, condominiumId: string | null) {
+    const where: any = { senderId };
+    if (condominiumId) where.condominiumId = condominiumId;
     const messages = await this.messagesRepo.find({
-      where: { senderId },
+      where,
       relations: ['recipient'],
       order: { createdAt: 'DESC' },
       take: 500,
@@ -94,15 +100,17 @@ export class MessagesService {
     return result;
   }
 
-  async getUnreadCount(userId: string): Promise<{ count: number }> {
-    const count = await this.messagesRepo.count({
-      where: { recipientId: userId, read: false },
-    });
+  async getUnreadCount(userId: string, condominiumId: string | null): Promise<{ count: number }> {
+    const where: any = { recipientId: userId, read: false };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const count = await this.messagesRepo.count({ where });
     return { count };
   }
 
-  async markAsRead(id: string, userId: string) {
-    const message = await this.messagesRepo.findOne({ where: { id } });
+  async markAsRead(id: string, userId: string, condominiumId: string | null) {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const message = await this.messagesRepo.findOne({ where });
     if (!message) throw new NotFoundException('Mensaje no encontrado');
     if (message.recipientId !== userId) throw new NotFoundException('Mensaje no encontrado');
 
@@ -110,14 +118,18 @@ export class MessagesService {
     return this.messagesRepo.save(message);
   }
 
-  async markAllAsRead(userId: string) {
-    await this.messagesRepo.update({ recipientId: userId, read: false }, { read: true });
+  async markAllAsRead(userId: string, condominiumId: string | null) {
+    const where: any = { recipientId: userId, read: false };
+    if (condominiumId) where.condominiumId = condominiumId;
+    await this.messagesRepo.update(where, { read: true });
     return { success: true };
   }
 
-  async getOne(id: string, userId: string) {
+  async getOne(id: string, userId: string, condominiumId: string | null) {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
     const message = await this.messagesRepo.findOne({
-      where: { id },
+      where,
       relations: ['sender', 'recipient'],
     });
     if (!message) throw new NotFoundException('Mensaje no encontrado');

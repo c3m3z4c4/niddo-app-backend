@@ -16,6 +16,7 @@ import { Role } from '../auth/roles.enum';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { CurrentTenant } from '../common/decorators/tenant.decorator';
 
 @Controller('projects')
 export class ProjectsController {
@@ -23,14 +24,18 @@ export class ProjectsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@Request() req) {
-    return this.projectsService.findAll(req.user.role);
+  findAll(@Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.projectsService.findAll(req.user.role, condominiumId);
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @Request() req) {
-    return this.projectsService.findOne(id, req.user.role);
+  findOne(
+    @Param('id') id: string,
+    @Request() req,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.projectsService.findOne(id, req.user.role, condominiumId);
   }
 
   @Post()
@@ -42,8 +47,12 @@ export class ProjectsController {
     Role.SECRETARIO,
     Role.TESORERO,
   )
-  create(@Body() dto: CreateProjectDto, @Request() req) {
-    return this.projectsService.create(dto, req.user.sub);
+  create(
+    @Body() dto: CreateProjectDto,
+    @Request() req,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.projectsService.create(dto, req.user.sub, condominiumId);
   }
 
   @Patch(':id/toggle-visibility')
@@ -55,8 +64,8 @@ export class ProjectsController {
     Role.SECRETARIO,
     Role.TESORERO,
   )
-  toggleVisibility(@Param('id') id: string) {
-    return this.projectsService.toggleVisibility(id);
+  toggleVisibility(@Param('id') id: string, @CurrentTenant() condominiumId: string | null) {
+    return this.projectsService.toggleVisibility(id, condominiumId);
   }
 
   @Patch(':id')
@@ -68,8 +77,12 @@ export class ProjectsController {
     Role.SECRETARIO,
     Role.TESORERO,
   )
-  update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
-    return this.projectsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectDto,
+    @CurrentTenant() condominiumId: string | null,
+  ) {
+    return this.projectsService.update(id, dto, condominiumId);
   }
 
   @Delete(':id')
@@ -81,7 +94,7 @@ export class ProjectsController {
     Role.SECRETARIO,
     Role.TESORERO,
   )
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(id);
+  remove(@Param('id') id: string, @CurrentTenant() condominiumId: string | null) {
+    return this.projectsService.remove(id, condominiumId);
   }
 }

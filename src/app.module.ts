@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -53,6 +55,9 @@ import { CondominiumsModule } from './condominiums/condominiums.module';
     CondominiumsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
+  ],
 })
 export class AppModule {}

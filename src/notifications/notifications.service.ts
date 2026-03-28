@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Notification } from './notification.entity';
 import { User } from '../users/users.entity';
 import { Role } from '../auth/roles.enum';
@@ -20,11 +20,13 @@ export class NotificationsService {
     message: string,
     targetId: string,
     targetType: 'event' | 'meeting',
+    condominiumId?: string | null,
   ) {
+    const condoFilter = condominiumId ? { condominiumId } : {};
     const users = await this.usersRepo.find({
       where: [
-        { role: Role.RESIDENT, isActive: true },
-        { role: Role.CONDO_ADMIN, isActive: true },
+        { role: Role.RESIDENT, isActive: true, ...condoFilter },
+        { role: Role.CONDO_ADMIN, isActive: true, ...condoFilter },
       ],
     });
 
@@ -36,31 +38,34 @@ export class NotificationsService {
         message,
         targetId,
         targetType,
+        condominiumId: condominiumId ?? undefined,
       }),
     );
 
     return this.notificationsRepo.save(notifications);
   }
 
-  async findAllForUser(userId: string) {
+  async findAllForUser(userId: string, condominiumId?: string | null) {
+    const where: any = { userId };
+    if (condominiumId) where.condominiumId = condominiumId;
     return this.notificationsRepo.find({
-      where: { userId },
+      where,
       order: { createdAt: 'DESC' },
       take: 50,
     });
   }
 
-  async getUnreadCount(userId: string): Promise<{ count: number }> {
-    const count = await this.notificationsRepo.count({
-      where: { userId, read: false },
-    });
+  async getUnreadCount(userId: string, condominiumId?: string | null): Promise<{ count: number }> {
+    const where: any = { userId, read: false };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const count = await this.notificationsRepo.count({ where });
     return { count };
   }
 
-  async markAsRead(id: string, userId: string) {
-    const notification = await this.notificationsRepo.findOne({
-      where: { id },
-    });
+  async markAsRead(id: string, userId: string, condominiumId?: string | null) {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const notification = await this.notificationsRepo.findOne({ where });
 
     if (!notification) {
       throw new NotFoundException('Notification not found');
@@ -74,8 +79,10 @@ export class NotificationsService {
     return this.notificationsRepo.save(notification);
   }
 
-  async markAllAsRead(userId: string) {
-    await this.notificationsRepo.update({ userId, read: false }, { read: true });
+  async markAllAsRead(userId: string, condominiumId?: string | null) {
+    const where: any = { userId, read: false };
+    if (condominiumId) where.condominiumId = condominiumId;
+    await this.notificationsRepo.update(where, { read: true });
     return { success: true };
   }
 }

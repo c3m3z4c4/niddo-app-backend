@@ -32,6 +32,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       role: user.role,
+      condominiumId: user.condominiumId ?? null,
     };
 
     return {
@@ -45,6 +46,7 @@ export class AuthService {
         address: user.address,
         role: user.role,
         houseId: user.houseId,
+        condominiumId: user.condominiumId,
         isActive: user.isActive,
       },
     };

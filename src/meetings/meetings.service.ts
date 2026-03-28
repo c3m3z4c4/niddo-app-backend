@@ -26,22 +26,30 @@ export class MeetingsService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async findAll(): Promise<Meeting[]> {
-    return this.meetingsRepo.find({ order: { date: 'ASC', startTime: 'ASC' } });
+  async findAll(condominiumId: string | null): Promise<Meeting[]> {
+    return this.meetingsRepo.find({
+      where: condominiumId ? { condominiumId } : {},
+      order: { date: 'ASC', startTime: 'ASC' },
+    });
   }
 
-  async findOne(id: string): Promise<Meeting> {
-    const meeting = await this.meetingsRepo.findOne({ where: { id } });
+  async findOne(id: string, condominiumId: string | null): Promise<Meeting> {
+    const where: any = { id };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const meeting = await this.meetingsRepo.findOne({ where });
     if (!meeting)
       throw new NotFoundException(`Reunión con id ${id} no encontrada`);
     return meeting;
   }
 
-  async create(dto: CreateMeetingDto, userId?: string): Promise<Meeting> {
+  async create(dto: CreateMeetingDto, userId?: string, condominiumId?: string | null): Promise<Meeting> {
     const conflict = await this.conflictService.checkConflict(
       dto.date,
       dto.startTime,
       dto.endTime,
+      undefined,
+      undefined,
+      condominiumId,
     );
     if (conflict)
       throw new ConflictException(
@@ -51,12 +59,13 @@ export class MeetingsService {
     const meeting = this.meetingsRepo.create({
       ...dto,
       createdById: userId,
+      condominiumId: condominiumId ?? undefined,
     });
     return this.meetingsRepo.save(meeting);
   }
 
-  async update(id: string, dto: UpdateMeetingDto): Promise<Meeting> {
-    const meeting = await this.findOne(id);
+  async update(id: string, dto: UpdateMeetingDto, condominiumId: string | null): Promise<Meeting> {
+    const meeting = await this.findOne(id, condominiumId);
 
     const date = dto.date ?? meeting.date;
     const startTime = dto.startTime ?? meeting.startTime;
@@ -68,6 +77,7 @@ export class MeetingsService {
       endTime,
       undefined,
       id,
+      condominiumId,
     );
     if (conflict)
       throw new ConflictException(
@@ -78,13 +88,13 @@ export class MeetingsService {
     return this.meetingsRepo.save(meeting);
   }
 
-  async remove(id: string): Promise<void> {
-    const meeting = await this.findOne(id);
+  async remove(id: string, condominiumId: string | null): Promise<void> {
+    const meeting = await this.findOne(id, condominiumId);
     await this.meetingsRepo.remove(meeting);
   }
 
-  async cancel(id: string, reason?: string): Promise<Meeting> {
-    const meeting = await this.findOne(id);
+  async cancel(id: string, reason?: string, condominiumId?: string | null): Promise<Meeting> {
+    const meeting = await this.findOne(id, condominiumId ?? null);
     meeting.status = 'cancelled';
     if (reason) meeting.cancelReason = reason;
     const saved = await this.meetingsRepo.save(meeting);
@@ -96,6 +106,7 @@ export class MeetingsService {
         : `La reunión del ${meeting.date} ha sido cancelada.`,
       id,
       'meeting',
+      condominiumId ?? null,
     );
     return saved;
   }
@@ -103,8 +114,9 @@ export class MeetingsService {
   async postpone(
     id: string,
     dto: { date: string; startTime: string; endTime?: string },
+    condominiumId?: string | null,
   ): Promise<Meeting> {
-    const meeting = await this.findOne(id);
+    const meeting = await this.findOne(id, condominiumId ?? null);
     const prevDate = meeting.date;
     const prevStartTime = meeting.startTime;
     meeting.originalDate = meeting.originalDate ?? prevDate;
@@ -120,15 +132,16 @@ export class MeetingsService {
       `La reunión ha sido reprogramada al ${dto.date} a las ${dto.startTime}.`,
       id,
       'meeting',
+      condominiumId ?? null,
     );
     return saved;
   }
 
-  async draftMinutes(id: string): Promise<{ development: string; agreements: string; responsibles: string }> {
+  async draftMinutes(id: string, condominiumId: string | null): Promise<{ development: string; agreements: string; responsibles: string }> {
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new ServiceUnavailableException('ANTHROPIC_API_KEY no está configurado en el servidor.');
     }
-    const meeting = await this.findOne(id);
+    const meeting = await this.findOne(id, condominiumId);
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const agenda = meeting.description?.trim() || 'Sin agenda registrada';
@@ -173,12 +186,13 @@ No incluyas markdown, no incluyas explicaciones fuera del JSON. Solo el JSON.`;
 
   async sendInvitation(
     id: string,
+    condominiumId: string | null,
     emails?: string[],
   ): Promise<{ sent: number; failed: number }> {
-    const meeting = await this.findOne(id);
+    const meeting = await this.findOne(id, condominiumId);
     let targets = emails;
     if (!targets || targets.length === 0) {
-      const users = await this.usersService.findAll();
+      const users = await this.usersService.findAll(condominiumId);
       targets = users
         .filter((u) => u.isActive !== false && u.email)
         .map((u) => u.email);
