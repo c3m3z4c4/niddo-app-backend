@@ -3,10 +3,9 @@ version: '3.8'
 services:
   backend:
     build: .
-    container_name: privadas_backend
     restart: always
     ports:
-      - "3001:3000"
+      - "3003:3000"
     env_file:
       - .env
     depends_on:
@@ -14,14 +13,13 @@ services:
 
   db:
     image: postgres:16
-    container_name: privadas_db
     restart: always
     environment:
       POSTGRES_DB: privadas_del_parque
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_stable_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  postgres_stable_data:
