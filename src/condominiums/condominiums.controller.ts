@@ -15,10 +15,15 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
+import { DataSource } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 @Controller('condominiums')
 export class CondominiumsController {
-  constructor(private readonly service: CondominiumsService) {}
+  constructor(
+    private readonly service: CondominiumsService,
+    @InjectDataSource() private readonly dataSource: DataSource,
+  ) {}
 
   /** Public: fetch branding by slug (used by frontend on load) */
   @Get('slug/:slug')
@@ -86,5 +91,45 @@ export class CondominiumsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }
+
+  /** PLATFORM_ADMIN only: backfill condominiumId for all legacy rows */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PLATFORM_ADMIN)
+  @Post(':id/backfill')
+  async backfill(@Param('id') condominiumId: string) {
+    const tables = [
+      'houses', 'green_area_events', 'meetings', 'rsvps',
+      'dues_config', 'dues_payments', 'dues_promotions', 'dues_policy',
+      'extraordinary_income', 'green_area_reservations', 'projects',
+      'direct_messages', 'notifications',
+    ];
+    const results: Record<string, number> = {};
+    for (const table of tables) {
+      try {
+        await this.dataSource.query(
+          `UPDATE "${table}" SET "condominiumId" = $1 WHERE "condominiumId" IS NULL`,
+          [condominiumId],
+        );
+        const [{ count }] = await this.dataSource.query(
+          `SELECT COUNT(*) AS count FROM "${table}" WHERE "condominiumId" = $1`,
+          [condominiumId],
+        );
+        results[table] = parseInt(count, 10);
+      } catch (err: any) {
+        results[table] = -1; // -1 means error
+      }
+    }
+    // Also backfill users
+    await this.dataSource.query(
+      `UPDATE users SET "condominiumId" = $1 WHERE "condominiumId" IS NULL AND role NOT IN ('PLATFORM_ADMIN')`,
+      [condominiumId],
+    );
+    const [{ userCount }] = await this.dataSource.query(
+      `SELECT COUNT(*) AS "userCount" FROM users WHERE "condominiumId" = $1`,
+      [condominiumId],
+    );
+    results['users'] = parseInt(userCount, 10);
+    return { condominiumId, results };
   }
 }
