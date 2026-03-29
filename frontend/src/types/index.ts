@@ -124,6 +124,55 @@ export interface CondominiumBranding {
   supportPhone: string | null;
 }
 
+// ── Dues / Cuotas ────────────────────────────────────────────
+
+export type PaymentStatus = 'pending' | 'paid' | 'exempt' | 'overdue';
+
+export interface DuesConfig {
+  id: string;
+  amount: string;
+  effectiveFrom: string;
+  condominiumId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DuesPayment {
+  id: string;
+  userId: string;
+  houseId?: string | null;
+  month: number;
+  year: number;
+  amount: string;
+  status: PaymentStatus;
+  paidAt?: string | null;
+  notes?: string | null;
+  user?: Pick<User, 'id' | 'name' | 'lastName' | 'email'>;
+  house?: Pick<House, 'id' | 'houseNumber' | 'address'>;
+  createdAt: string;
+  condominiumId?: string | null;
+}
+
+export interface DuesSummary {
+  total: number;
+  paid: number;
+  pending: number;
+  exempt: number;
+  totalAmount: number;
+  collectedAmount: number;
+}
+
+export interface Debtor {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  houseNumber: string;
+  houseAddress?: string;
+  pendingMonths: number;
+  accessStatus: string;
+  pendingPayments: { month: number; year: number; amount: number }[];
+}
+
 export interface Condominium {
   id: string;
   name: string;

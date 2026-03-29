@@ -24,6 +24,7 @@ import {
   Moon,
   Building2,
   ChevronDown,
+  DollarSign,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
@@ -38,6 +39,7 @@ const adminLinks = [
   { to: '/admin/eventos', label: 'Eventos', icon: TreePine, roles: null },
   { to: '/admin/casas', label: 'Casas', icon: HomeIcon, roles: null },
   { to: '/admin/usuarios', label: 'Usuarios', icon: Users, roles: null },
+  { to: '/admin/cuotas', label: 'Cuotas', icon: DollarSign, roles: null },
 ];
 
 function CondoSelector({ collapsed = false }: { collapsed?: boolean }) {

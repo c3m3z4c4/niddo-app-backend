@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { User, House, Meeting, GreenAreaEvent, Rsvp, RsvpStatus } from '@/types';
+import { User, House, Meeting, GreenAreaEvent, Rsvp, RsvpStatus, DuesConfig, DuesPayment, DuesSummary, Debtor } from '@/types';
 
 // ── Users ───────────────────────────────────────────────────────────────────
 export function useUsersQuery() {
@@ -177,5 +177,69 @@ export function useRemoveRsvp() {
     mutationFn: ({ targetType, targetId }: { targetType: string; targetId: string }) =>
       api.delete(`/rsvps/${targetType}/${targetId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-rsvps'] }),
+  });
+}
+
+// ── Dues / Cuotas ────────────────────────────────────────────────────────────
+
+export function useDuesConfigQuery() {
+  return useQuery<DuesConfig | null>({
+    queryKey: ['dues-config'],
+    queryFn: () => api.get<DuesConfig>('/dues/config').then(r => r.data).catch(() => null),
+  });
+}
+
+export function useDuesSummaryQuery(month: number, year: number) {
+  return useQuery<DuesSummary>({
+    queryKey: ['dues-summary', month, year],
+    queryFn: () => api.get<DuesSummary>(`/dues/summary?month=${month}&year=${year}`).then(r => r.data),
+  });
+}
+
+export function useDuesPaymentsQuery() {
+  return useQuery<DuesPayment[]>({
+    queryKey: ['dues-payments'],
+    queryFn: () => api.get<DuesPayment[]>('/dues').then(r => r.data),
+  });
+}
+
+export function useDebtorsQuery() {
+  return useQuery<Debtor[]>({
+    queryKey: ['dues-debtors'],
+    queryFn: () => api.get<Debtor[]>('/dues/debtors').then(r => r.data),
+  });
+}
+
+export function useSetDuesConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { amount: number }) => api.post<DuesConfig>('/dues/config', data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['dues-config'] }),
+  });
+}
+
+export function useGenerateDues() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { month: number; year: number }) =>
+      api.post<{ generated: number; exempt: number }>('/dues/generate', data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dues-payments'] });
+      qc.invalidateQueries({ queryKey: ['dues-summary'] });
+      qc.invalidateQueries({ queryKey: ['dues-debtors'] });
+    },
+  });
+}
+
+export function useUpdateDuesPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { status?: string; paidAt?: string | null; notes?: string } }) =>
+      api.patch<DuesPayment>(`/dues/${id}`, data).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['dues-payments'] });
+      qc.invalidateQueries({ queryKey: ['dues-summary'] });
+      qc.invalidateQueries({ queryKey: ['dues-debtors'] });
+    },
   });
 }
