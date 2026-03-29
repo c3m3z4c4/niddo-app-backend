@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   ManyToMany,
   JoinTable,
-  Unique,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -15,7 +14,6 @@ import { Condominium } from '../condominiums/condominium.entity';
 export type HouseType = 'terreno' | 'en_construccion' | 'casa';
 
 @Entity('houses')
-@Unique(['houseNumber', 'condominiumId'])
 export class House {
   @PrimaryGeneratedColumn('uuid')
   id: string;
