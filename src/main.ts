@@ -127,9 +127,9 @@ async function bootstrap() {
   );
 
   // ── One-time migration: fix house_residents join table ──────────────────
-  try {
-    const dataSource = app.get(DataSource);
+  const dataSource = app.get(DataSource);
 
+  try {
     // Remove any admin users that got into house_residents by mistake
     await dataSource.query(`
       DELETE FROM house_residents
@@ -146,8 +146,14 @@ async function bootstrap() {
         AND role NOT IN ('PLATFORM_ADMIN', 'CONDO_ADMIN')
       ON CONFLICT DO NOTHING
     `);
+    console.log('✅ house_residents migration done');
+  } catch (e: any) {
+    console.warn('⚠️  house_residents migration skipped:', e.message);
+  }
 
-    // Backfill condominiumId for existing users that belong to the seed condo
+  // ── Backfill condominiumId for all tables (independent of above) ──────────
+  try {
+    // Backfill users first
     await dataSource.query(`
       UPDATE users
       SET "condominiumId" = $1
@@ -155,7 +161,7 @@ async function bootstrap() {
         AND role NOT IN ('PLATFORM_ADMIN')
     `, [seedCondo.id]);
 
-    // Backfill condominiumId for all other tables (each wrapped independently)
+    // Backfill all other tables
     for (const table of [
       'houses', 'green_area_events', 'meetings', 'rsvps',
       'dues_config', 'dues_payments', 'dues_promotions', 'dues_policy',
@@ -168,15 +174,16 @@ async function bootstrap() {
           SET "condominiumId" = $1
           WHERE "condominiumId" IS NULL
         `, [seedCondo.id]);
-        if (result[1] > 0) console.log(`  ↳ backfilled ${result[1]} rows in ${table}`);
+        // PostgreSQL returns [rows, rowCount] for raw queries
+        const count = Array.isArray(result) ? result[1] : result?.rowCount;
+        console.log(`  ↳ backfilled ${count ?? '?'} rows in "${table}"`);
       } catch (tableErr: any) {
         console.warn(`  ⚠️  backfill skipped for "${table}": ${tableErr.message}`);
       }
     }
-
     console.log('✅ condominiumId backfill complete');
-  } catch (e) {
-    console.warn('⚠️  Seed migration skipped:', e.message);
+  } catch (e: any) {
+    console.warn('⚠️  condominiumId backfill failed:', e.message);
   }
 
   await app.listen(3000, '0.0.0.0');
