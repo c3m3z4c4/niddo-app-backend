@@ -154,6 +154,14 @@ export class UsersService {
     await this.usersRepository.remove(user);
   }
 
+  async deleteAllResidents(condominiumId: string | null): Promise<{ deleted: number }> {
+    const where: any = { role: Role.RESIDENT };
+    if (condominiumId) where.condominiumId = condominiumId;
+    const users = await this.usersRepository.find({ where });
+    await this.usersRepository.remove(users);
+    return { deleted: users.length };
+  }
+
   async importUsers(
     dtos: ImportUserDto[],
   ): Promise<{ created: number; updated: number; skipped: number; skippedEmails: string[] }> {

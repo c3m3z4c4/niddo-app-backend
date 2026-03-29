@@ -105,6 +105,12 @@ export class UsersController {
     return this.usersService.update(id, dto, req.user.role);
   }
 
+  @Delete('all-residents')
+  @Roles(Role.PLATFORM_ADMIN)
+  deleteAllResidents(@CurrentTenant() condominiumId: string | null) {
+    return this.usersService.deleteAllResidents(condominiumId);
+  }
+
   @Delete(':id')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
   remove(@Param('id') id: string) {

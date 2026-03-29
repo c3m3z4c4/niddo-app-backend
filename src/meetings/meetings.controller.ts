@@ -96,6 +96,13 @@ export class MeetingsController {
     return this.meetingsService.draftMinutes(id, condominiumId);
   }
 
+  @Delete('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PLATFORM_ADMIN)
+  deleteAll(@CurrentTenant() condominiumId: string | null) {
+    return this.meetingsService.deleteAll(condominiumId);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)

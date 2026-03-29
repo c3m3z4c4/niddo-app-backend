@@ -93,6 +93,13 @@ export class MeetingsService {
     await this.meetingsRepo.remove(meeting);
   }
 
+  async deleteAll(condominiumId: string | null): Promise<{ deleted: number }> {
+    const where: any = condominiumId ? { condominiumId } : {};
+    const meetings = await this.meetingsRepo.find({ where });
+    await this.meetingsRepo.remove(meetings);
+    return { deleted: meetings.length };
+  }
+
   async cancel(id: string, reason?: string, condominiumId?: string | null): Promise<Meeting> {
     const meeting = await this.findOne(id, condominiumId ?? null);
     meeting.status = 'cancelled';

@@ -78,6 +78,13 @@ export class EventsController {
     return this.eventsService.postpone(id, body, condominiumId);
   }
 
+  @Delete('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PLATFORM_ADMIN)
+  deleteAll(@CurrentTenant() condominiumId: string | null) {
+    return this.eventsService.deleteAll(condominiumId);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)

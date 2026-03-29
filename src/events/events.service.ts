@@ -87,6 +87,13 @@ export class EventsService {
     await this.eventsRepo.remove(event);
   }
 
+  async deleteAll(condominiumId: string | null): Promise<{ deleted: number }> {
+    const where: any = condominiumId ? { condominiumId } : {};
+    const events = await this.eventsRepo.find({ where });
+    await this.eventsRepo.remove(events);
+    return { deleted: events.length };
+  }
+
   async cancel(id: string, reason?: string, condominiumId?: string | null): Promise<GreenAreaEvent> {
     const event = await this.findOne(id, condominiumId ?? null);
     event.status = 'cancelled';
