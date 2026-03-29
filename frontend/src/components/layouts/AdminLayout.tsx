@@ -25,6 +25,7 @@ import {
   Building2,
   ChevronDown,
   DollarSign,
+  ShieldAlert,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
@@ -40,6 +41,7 @@ const adminLinks = [
   { to: '/admin/casas', label: 'Casas', icon: HomeIcon, roles: null },
   { to: '/admin/usuarios', label: 'Usuarios', icon: Users, roles: null },
   { to: '/admin/cuotas', label: 'Cuotas', icon: DollarSign, roles: null },
+  { to: '/admin/datos', label: 'Gestión de datos', icon: ShieldAlert, roles: ['PLATFORM_ADMIN'] },
 ];
 
 function CondoSelector({ collapsed = false }: { collapsed?: boolean }) {

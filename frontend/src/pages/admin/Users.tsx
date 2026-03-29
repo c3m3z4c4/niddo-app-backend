@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
+import { TenantGuard } from '@/components/TenantGuard';
 import { UserFormDialog } from '@/components/admin/UserFormDialog';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { TablePagination, paginate } from '@/components/admin/TablePagination';
@@ -96,6 +97,7 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
+      <TenantGuard>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -200,6 +202,7 @@ export default function AdminUsers() {
 
       <UserFormDialog key={selectedUser?.id ?? 'new'} open={formOpen} onOpenChange={setFormOpen} user={selectedUser} onSubmit={handleFormSubmit} houses={houses} />
       <DeleteUserDialog open={deleteOpen} onOpenChange={setDeleteOpen} user={selectedUser} onConfirm={handleConfirmDelete} />
+      </TenantGuard>
     </AdminLayout>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
+import { TenantGuard } from '@/components/TenantGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +80,7 @@ export default function AdminHouses() {
 
   return (
     <AdminLayout>
+      <TenantGuard>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -174,6 +176,7 @@ export default function AdminHouses() {
 
       <HouseFormDialog open={formOpen} onOpenChange={setFormOpen} house={selectedHouse} onSubmit={handleSubmit} />
       <DeleteHouseDialog open={deleteOpen} onOpenChange={setDeleteOpen} house={selectedHouse} onConfirm={handleDeleteConfirm} />
+      </TenantGuard>
     </AdminLayout>
   );
 }

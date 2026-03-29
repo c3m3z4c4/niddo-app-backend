@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
+import { TenantGuard } from '@/components/TenantGuard';
 import { EventFormDialog } from '@/components/admin/EventFormDialog';
 import { DeleteEventDialog } from '@/components/admin/DeleteEventDialog';
 import { TablePagination, paginate } from '@/components/admin/TablePagination';
@@ -94,6 +95,7 @@ export default function AdminEvents() {
 
   return (
     <AdminLayout>
+      <TenantGuard>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -228,6 +230,7 @@ export default function AdminEvents() {
 
       <EventFormDialog key={selectedEvent?.id ?? 'new'} open={formOpen} onOpenChange={setFormOpen} event={selectedEvent} onSubmit={handleFormSubmit} />
       <DeleteEventDialog open={deleteOpen} onOpenChange={setDeleteOpen} event={selectedEvent} onConfirm={handleConfirmDelete} />
+      </TenantGuard>
     </AdminLayout>
   );
 }

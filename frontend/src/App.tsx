@@ -26,6 +26,7 @@ import AdminHouses from "./pages/admin/Houses";
 import AdminUsers from "./pages/admin/Users";
 import PlatformDashboard from "./pages/admin/PlatformDashboard";
 import AdminCondominiums from "./pages/admin/AdminCondominiums";
+import AdminDataManagement from "./pages/admin/DataManagement";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 
@@ -64,6 +65,7 @@ function AppRoutes() {
           <Route path="/admin/cuotas" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><AdminDues /></ProtectedRoute>} />
           <Route path="/admin/platform" element={<ProtectedRoute allowedRoles={['PLATFORM_ADMIN']}><PlatformDashboard /></ProtectedRoute>} />
           <Route path="/admin/condominios" element={<ProtectedRoute allowedRoles={['PLATFORM_ADMIN']}><AdminCondominiums /></ProtectedRoute>} />
+          <Route path="/admin/datos" element={<ProtectedRoute allowedRoles={['PLATFORM_ADMIN']}><AdminDataManagement /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

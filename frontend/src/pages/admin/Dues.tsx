@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
+import { TenantGuard } from '@/components/TenantGuard';
 import {
   useDuesConfigQuery, useDuesSummaryQuery, useDuesPaymentsQuery,
   useDebtorsQuery, useSetDuesConfig, useGenerateDues, useUpdateDuesPayment,
@@ -150,6 +151,7 @@ export default function AdminDues() {
 
   return (
     <AdminLayout>
+      <TenantGuard>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -516,6 +518,7 @@ export default function AdminDues() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </TenantGuard>
     </AdminLayout>
   );
 }
