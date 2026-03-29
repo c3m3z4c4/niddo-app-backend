@@ -117,7 +117,7 @@ export class CondominiumsController {
         );
         results[table] = parseInt(count, 10);
       } catch (err: any) {
-        results[table] = -1; // -1 means error
+        results[table] = err.message; // return error message for diagnosis
       }
     }
     // Also backfill users
