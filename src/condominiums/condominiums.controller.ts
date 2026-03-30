@@ -7,7 +7,14 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { existsSync, mkdirSync } from 'fs';
+import { join, extname } from 'path';
 import { CondominiumsService } from './condominiums.service';
 import { CreateCondominiumDto } from './dto/create-condominium.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
@@ -17,6 +24,19 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.enum';
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
+
+const BRANDING_DIR = join(process.cwd(), 'uploads', 'branding');
+
+const brandingStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    if (!existsSync(BRANDING_DIR)) mkdirSync(BRANDING_DIR, { recursive: true });
+    cb(null, BRANDING_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    cb(null, `${unique}${extname(file.originalname)}`);
+  },
+});
 
 @Controller('condominiums')
 export class CondominiumsController {
@@ -75,6 +95,29 @@ export class CondominiumsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: Partial<CreateCondominiumDto>) {
     return this.service.update(id, dto);
+  }
+
+  /** CONDO_ADMIN+: upload a branding asset (logo, isotipo, favicon) */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  @Post(':id/branding/upload')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: brandingStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.match(/^image\/(jpeg|jpg|png|webp|gif|x-icon|vnd.microsoft.icon)$/) &&
+          !file.originalname.match(/\.(ico|png|jpg|jpeg|webp|gif|svg)$/i)) {
+        return cb(new BadRequestException('Solo se permiten imágenes (png, jpg, webp, gif, ico, svg)'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  uploadBrandingAsset(
+    @Param('id') _id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No se recibió ningún archivo');
+    return { url: `/uploads/branding/${file.filename}` };
   }
 
   /** PLATFORM_ADMIN or CONDO_ADMIN: update branding */
