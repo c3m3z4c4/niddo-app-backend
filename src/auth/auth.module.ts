@@ -8,7 +8,9 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { RolesGuard } from './roles.guard';
+import { LicenseGuard } from './license.guard';
 import { User } from '../users/users.entity';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
@@ -24,9 +26,10 @@ import { User } from '../users/users.entity';
         return { secret, signOptions: { expiresIn: expiresIn as any } };
       },
     }),
+    BillingModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard],
-  exports: [AuthService, RolesGuard],
+  providers: [AuthService, JwtStrategy, RolesGuard, LicenseGuard],
+  exports: [AuthService, RolesGuard, LicenseGuard],
 })
 export class AuthModule {}

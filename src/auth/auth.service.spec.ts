@@ -93,10 +93,12 @@ describe('AuthService', () => {
 
       await service.login('juan@test.com', 'correct');
 
-      expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: mockUser.id,
-        role: mockUser.role,
-      });
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: mockUser.id,
+          role: mockUser.role,
+        }),
+      );
     });
   });
 });

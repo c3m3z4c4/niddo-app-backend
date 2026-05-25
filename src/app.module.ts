@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { LicenseGuard } from './auth/license.guard';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
+import { RlsMiddleware } from './common/middleware/rls.middleware';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -22,6 +24,7 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { MessagesModule } from './messages/messages.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
 import { CondominiumsModule } from './condominiums/condominiums.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -53,11 +56,20 @@ import { CondominiumsModule } from './condominiums/condominiums.module';
     MessagesModule,
     UserSettingsModule,
     CondominiumsModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
+    { provide: APP_GUARD, useClass: LicenseGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RlsMiddleware)
+      .forRoutes('*');
+  }
+}
+

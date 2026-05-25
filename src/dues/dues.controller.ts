@@ -99,8 +99,20 @@ export class DuesController {
 
   @Post('import')
   @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.TESORERO)
-  importPayments(@Body() dto: ImportPaymentsDto) {
-    return this.duesService.importPayments(dto.payments);
+  importPayments(@Body() dto: ImportPaymentsDto, @Request() req, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.importPayments(dto.payments, req.user.userId, condominiumId);
+  }
+
+  @Get('import/sessions')
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  getImportSessions(@CurrentTenant() condominiumId: string | null) {
+    return this.duesService.getImportSessions(condominiumId);
+  }
+
+  @Post('import/:sessionId/rollback')
+  @Roles(Role.PLATFORM_ADMIN, Role.CONDO_ADMIN, Role.PRESIDENTE, Role.SECRETARIO, Role.TESORERO)
+  rollbackImport(@Param('sessionId') sessionId: string, @CurrentTenant() condominiumId: string | null) {
+    return this.duesService.rollbackImport(sessionId, condominiumId);
   }
 
   @Delete('all')

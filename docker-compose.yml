@@ -16,6 +16,8 @@ services:
     image: postgres:16
     container_name: privadas_db
     restart: always
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: privadas_del_parque
       POSTGRES_USER: postgres

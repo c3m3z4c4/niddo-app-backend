@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Role } from '../../auth/roles.enum';
+import { rlsLocalStorage } from '../rls.patch';
 
 /**
  * Resolves the active condominiumId for every request and attaches it to req.condominiumId.
@@ -34,6 +35,19 @@ export class TenantInterceptor implements NestInterceptor {
       request.condominiumId = request.headers['x-tenant-id'] ?? null;
     }
 
+    // Sync with the RLS context
+    const store = rlsLocalStorage.getStore();
+    if (store) {
+      store.condominiumId = request.condominiumId;
+      if (user) {
+        store.bypassRls = user.role === Role.PLATFORM_ADMIN && !request.condominiumId;
+      } else {
+        // Unauthenticated request: bypass RLS if there is no tenant ID header (e.g. login)
+        store.bypassRls = !request.condominiumId;
+      }
+    }
+
     return next.handle();
   }
 }
+

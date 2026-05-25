@@ -3,14 +3,17 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { DuesConfig } from './dues-config.entity';
 import { DuesPayment } from './dues-payment.entity';
 import { DuesPromotion } from './dues-promotion.entity';
 import { DuesPolicy } from './dues-policy.entity';
 import { ExtraordinaryIncome } from './extraordinary-income.entity';
+import { ImportSession } from './import-session.entity';
+import { ImportSessionRecord } from './import-session-record.entity';
 import { House } from '../houses/houses.entity';
 import { User } from '../users/users.entity';
 import { Role, CONDO_ADMIN_ROLES } from '../auth/roles.enum';
@@ -47,6 +50,11 @@ export class DuesService {
     private extraordinaryRepo: Repository<ExtraordinaryIncome>,
     @InjectRepository(House)
     private houseRepo: Repository<House>,
+    @InjectRepository(ImportSession)
+    private sessionRepo: Repository<ImportSession>,
+    @InjectRepository(ImportSessionRecord)
+    private sessionRecordRepo: Repository<ImportSessionRecord>,
+    private dataSource: DataSource,
   ) {}
 
   async getConfig(condominiumId?: string | null): Promise<DuesConfig | null> {
@@ -205,11 +213,21 @@ export class DuesService {
 
   async importPayments(
     items: ImportPaymentItemDto[],
-  ): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
+    importedById?: string,
+    condominiumId?: string | null,
+  ): Promise<{ created: number; updated: number; skipped: number; errors: string[]; sessionId: string }> {
     let created = 0;
     let updated = 0;
     let skipped = 0;
     const errors: string[] = [];
+
+    const session = new ImportSession();
+    session.importedById = importedById ?? undefined!;
+    session.condominiumId = condominiumId ?? undefined!;
+    session.status = 'completed';
+    await this.sessionRepo.save(session);
+
+    const records: Partial<ImportSessionRecord>[] = [];
 
     for (const item of items) {
       const user = await this.userRepo.findOne({ where: { email: item.email } });
@@ -231,17 +249,28 @@ export class DuesService {
       });
 
       if (existing) {
-        if (existing.status === 'paid') {
+        if (existing.status === 'paid' || existing.status === 'exempt') {
           skipped++;
           continue;
         }
+        const prevStatus = existing.status;
+        const prevPaidAt = existing.paidAt;
+        const prevNotes = existing.notes;
         existing.status = 'paid';
         existing.paidAt = item.paidAt || new Date().toISOString().split('T')[0];
         if (item.notes) existing.notes = item.notes;
         await this.paymentRepo.save(existing);
+        const rec = new ImportSessionRecord();
+        rec.sessionId = session.id;
+        rec.paymentId = existing.id;
+        rec.action = 'updated';
+        rec.prevStatus = prevStatus ?? undefined!;
+        rec.prevPaidAt = prevPaidAt ?? undefined!;
+        rec.prevNotes = prevNotes ?? undefined!;
+        records.push(rec);
         updated++;
       } else {
-        const config = await this.getConfig();
+        const config = await this.getConfig(condominiumId);
         const payment = new DuesPayment();
         payment.userId = user.id;
         payment.houseId = user.houseId || null;
@@ -251,12 +280,71 @@ export class DuesService {
         payment.status = 'paid';
         payment.paidAt = item.paidAt || new Date().toISOString().split('T')[0];
         payment.notes = item.notes || null;
+        if (condominiumId) payment.condominiumId = condominiumId;
         await this.paymentRepo.save(payment);
+        const rec = new ImportSessionRecord();
+        rec.sessionId = session.id;
+        rec.paymentId = payment.id;
+        rec.action = 'created';
+        records.push(rec);
         created++;
       }
     }
 
-    return { created, updated, skipped, errors };
+    if (records.length > 0) {
+      await this.sessionRecordRepo.save(records);
+    }
+
+    session.totalCreated = created;
+    session.totalUpdated = updated;
+    session.totalSkipped = skipped;
+    session.errors = errors;
+    await this.sessionRepo.save(session);
+
+    return { created, updated, skipped, errors, sessionId: session.id };
+  }
+
+  async getImportSessions(condominiumId?: string | null): Promise<ImportSession[]> {
+    const where: Record<string, unknown> = {};
+    if (condominiumId) where.condominiumId = condominiumId;
+    return this.sessionRepo.find({
+      where,
+      relations: ['importedBy'],
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
+  }
+
+  async rollbackImport(sessionId: string, condominiumId?: string | null): Promise<void> {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException(`Sesión de importación ${sessionId} no encontrada`);
+    if (session.status === 'rolled_back') {
+      throw new BadRequestException('Esta sesión ya fue revertida y no puede revertirse nuevamente');
+    }
+    if (condominiumId && session.condominiumId && session.condominiumId !== condominiumId) {
+      throw new ForbiddenException('No tiene permiso para revertir esta sesión');
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      const records = await manager.find(ImportSessionRecord, { where: { sessionId } });
+
+      for (const record of records) {
+        if (record.action === 'created') {
+          await manager.delete(DuesPayment, { id: record.paymentId });
+        } else if (record.action === 'updated') {
+          await manager.update(DuesPayment, { id: record.paymentId }, {
+            status: (record.prevStatus as 'paid' | 'pending' | 'exempt') ?? 'pending',
+            paidAt: record.prevPaidAt ?? null,
+            notes: record.prevNotes ?? null,
+          });
+        }
+      }
+
+      await manager.update(ImportSession, { id: sessionId }, {
+        status: 'rolled_back',
+        rolledBackAt: new Date(),
+      });
+    });
   }
 
   async updatePayment(id: string, dto: UpdatePaymentDto): Promise<DuesPayment> {

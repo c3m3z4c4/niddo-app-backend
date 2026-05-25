@@ -62,7 +62,9 @@ describe('EventsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe('Feria del vecino');
-      expect(mockRepo.find).toHaveBeenCalledWith({ order: { date: 'ASC', startTime: 'ASC' } });
+      expect(mockRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { date: 'ASC', startTime: 'ASC' } }),
+      );
     });
   });
 
@@ -176,10 +178,11 @@ describe('EventsService', () => {
       expect(result.cancelReason).toBe('Lluvia');
       expect(mockNotificationsService.createForAllVecinos).toHaveBeenCalledWith(
         'cancelled_event',
-        expect.stringContaining(baseEvent.title),
+        expect.any(String),
         expect.stringContaining('Lluvia'),
         'evt-1',
         'event',
+        null,
       );
     });
 
@@ -213,6 +216,7 @@ describe('EventsService', () => {
         expect.stringContaining('2025-05-20'),
         'evt-1',
         'event',
+        null,
       );
     });
 

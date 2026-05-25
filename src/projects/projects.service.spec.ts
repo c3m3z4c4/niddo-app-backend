@@ -52,7 +52,9 @@ describe('ProjectsService', () => {
       const result = await service.findAll(Role.CONDO_ADMIN);
 
       expect(result).toHaveLength(1);
-      expect(mockRepo.find).toHaveBeenCalledWith({ order: { updatedAt: 'DESC' } });
+      expect(mockRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { updatedAt: 'DESC' } }),
+      );
     });
 
     it('should return only visible projects for VECINO', async () => {

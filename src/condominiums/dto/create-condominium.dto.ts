@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsEmail, IsEnum, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsEnum, MaxLength, IsDateString, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import type { CondominiumStatus } from '../condominium.entity';
 
 export class CreateCondominiumDto {
@@ -32,4 +33,20 @@ export class CreateCondominiumDto {
   @IsOptional()
   @IsEnum(['active', 'suspended', 'trial', 'cancelled'])
   status?: CondominiumStatus;
+
+  @IsOptional()
+  @IsDateString()
+  trialEndsAt?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  maxHouses?: number | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  maxUsers?: number | null;
 }

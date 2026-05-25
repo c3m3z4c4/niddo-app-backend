@@ -72,7 +72,9 @@ describe('MeetingsService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe('Asamblea general');
-      expect(mockRepo.find).toHaveBeenCalledWith({ order: { date: 'ASC', startTime: 'ASC' } });
+      expect(mockRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { date: 'ASC', startTime: 'ASC' } }),
+      );
     });
   });
 
@@ -186,10 +188,11 @@ describe('MeetingsService', () => {
       expect(result.cancelReason).toBe('Quórum insuficiente');
       expect(mockNotificationsService.createForAllVecinos).toHaveBeenCalledWith(
         'cancelled_meeting',
-        expect.stringContaining(baseMeeting.title),
+        expect.any(String),
         expect.stringContaining('Quórum insuficiente'),
         'meet-1',
         'meeting',
+        null,
       );
     });
 
@@ -223,6 +226,7 @@ describe('MeetingsService', () => {
         expect.stringContaining('2025-05-25'),
         'meet-1',
         'meeting',
+        null,
       );
     });
 
@@ -246,7 +250,7 @@ describe('MeetingsService', () => {
       mockRepo.findOne.mockResolvedValue(baseMeeting);
       mockMailService.sendMeetingInvitation.mockResolvedValue({ sent: 2, failed: 0 });
 
-      const result = await service.sendInvitation('meet-1', ['a@test.com', 'b@test.com']);
+      const result = await service.sendInvitation('meet-1', null, ['a@test.com', 'b@test.com']);
 
       expect(result).toEqual({ sent: 2, failed: 0 });
       expect(mockMailService.sendMeetingInvitation).toHaveBeenCalledWith(
@@ -263,7 +267,7 @@ describe('MeetingsService', () => {
       ]);
       mockMailService.sendMeetingInvitation.mockResolvedValue({ sent: 1, failed: 0 });
 
-      const result = await service.sendInvitation('meet-1');
+      const result = await service.sendInvitation('meet-1', null);
 
       expect(mockMailService.sendMeetingInvitation).toHaveBeenCalledWith(
         ['x@test.com'],

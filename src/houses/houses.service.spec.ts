@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { HousesService } from './houses.service';
 import { House } from './houses.entity';
+import { User } from '../users/users.entity';
 import { CreateHouseDto } from './dto/create-house.dto';
 import { UpdateHouseDto } from './dto/update-house.dto';
 
@@ -29,11 +30,14 @@ const mockRepo = {
 describe('HousesService', () => {
   let service: HousesService;
 
+  const mockUserRepo = { find: jest.fn(), findOne: jest.fn() };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HousesService,
         { provide: getRepositoryToken(House), useValue: mockRepo },
+        { provide: getRepositoryToken(User), useValue: mockUserRepo },
       ],
     }).compile();
 

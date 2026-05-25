@@ -1,3 +1,5 @@
+import './common/rls.patch';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
@@ -48,45 +50,63 @@ async function migrateRolesIfNeeded(): Promise<void> {
     for (const v of ['PLATFORM_ADMIN', 'CONDO_ADMIN', 'RESIDENT']) {
       await client.query(`
         DO $$ BEGIN
-          ALTER TYPE users_role_enum ADD VALUE IF NOT EXISTS '${v}';
-        EXCEPTION WHEN duplicate_object THEN null;
+          ALTER TYPE user_role_enum ADD VALUE '${v}';
+        EXCEPTION
+          WHEN duplicate_object THEN null;
         END $$;
       `);
     }
 
-    // Remap data
-    await client.query(`UPDATE users SET role = 'PLATFORM_ADMIN' WHERE role = 'SUPER_ADMIN'`);
-    await client.query(`UPDATE users SET role = 'CONDO_ADMIN'    WHERE role = 'ADMIN'`);
-    await client.query(`UPDATE users SET role = 'RESIDENT'       WHERE role = 'VECINO'`);
-
-    console.log('✅  Role migration complete');
-  } catch (e) {
-    console.warn('⚠️   migrateRolesIfNeeded skipped:', (e as Error).message);
+    // Perform cast
+    await client.query(`
+      ALTER TABLE users
+      ALTER COLUMN role TYPE user_role_enum
+      USING (
+        CASE role::text
+          WHEN 'SUPER_ADMIN' THEN 'PLATFORM_ADMIN'::user_role_enum
+          WHEN 'ADMIN' THEN 'CONDO_ADMIN'::user_role_enum
+          WHEN 'VECINO' THEN 'RESIDENT'::user_role_enum
+          ELSE role::user_role_enum
+        END
+      )
+    `);
+    console.log('✅ Legacy role values migrated');
+  } catch (e: any) {
+    console.warn('⚠️  Role migration skipped/failed:', e.message);
   } finally {
-    try { await client.end(); } catch { /* ignore */ }
+    await client.end();
   }
 }
 
 async function bootstrap() {
   await migrateRolesIfNeeded();
+
+  // Ensure uploads/saas-proofs directory exists
+  const uploadsDir = resolve(process.cwd(), 'uploads', 'saas-proofs');
+  if (!existsSync(uploadsDir)) {
+    mkdirSync(uploadsDir, { recursive: true });
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Serve uploaded files as static assets
-  const uploadsDir = resolve(process.cwd(), 'uploads');
-  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
+  const staticUploadsDir = resolve(process.cwd(), 'uploads');
+  if (!existsSync(staticUploadsDir)) {
+    mkdirSync(staticUploadsDir, { recursive: true });
+  }
+  app.useStaticAssets(staticUploadsDir, { prefix: '/uploads' });
 
   app.enableCors({
     origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Authorization, x-tenant-id',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
   });
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
       transform: true,
+      forbidNonWhitelisted: true,
     }),
   );
 
@@ -184,6 +204,57 @@ async function bootstrap() {
     console.log('✅ condominiumId backfill complete');
   } catch (e: any) {
     console.warn('⚠️  condominiumId backfill failed:', e.message);
+  }
+
+  // ── Enable Row-Level Security (RLS) and Create Policies ──────────────────
+  try {
+    const rlsTables = [
+      'users',
+      'houses',
+      'green_area_events',
+      'meetings',
+      'rsvps',
+      'dues_config',
+      'dues_payments',
+      'dues_promotions',
+      'dues_policy',
+      'extraordinary_income',
+      'green_area_reservations',
+      'projects',
+      'direct_messages',
+      'notifications',
+      'saas_payments',
+      'condominium_licenses'
+    ];
+
+    for (const table of rlsTables) {
+      await dataSource.query(`ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY;`);
+      await dataSource.query(`DROP POLICY IF EXISTS tenant_isolation_policy ON "${table}";`);
+      await dataSource.query(`
+        CREATE POLICY tenant_isolation_policy ON "${table}"
+        FOR ALL
+        USING (
+          current_setting('app.bypass_rls', true) = 'true'
+          OR "condominiumId" = NULLIF(current_setting('app.current_condominium_id', true), '')::uuid
+        );
+      `);
+      console.log(`  🛡️  RLS enabled & policy created for "${table}"`);
+    }
+    console.log('✅ PostgreSQL Row-Level Security (RLS) setup complete');
+  } catch (e: any) {
+    console.warn('⚠️  PostgreSQL Row-Level Security (RLS) setup failed:', e.message);
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Niddo API')
+      .setDescription('API de administración de condominios Niddo')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+    console.log('📚 Swagger docs available at http://0.0.0.0:3000/api/docs');
   }
 
   await app.listen(3000, '0.0.0.0');
