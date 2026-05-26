@@ -25,6 +25,7 @@ import { MessagesModule } from './messages/messages.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
 import { CondominiumsModule } from './condominiums/condominiums.module';
 import { BillingModule } from './billing/billing.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { BillingModule } from './billing/billing.module';
     UserSettingsModule,
     CondominiumsModule,
     BillingModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
