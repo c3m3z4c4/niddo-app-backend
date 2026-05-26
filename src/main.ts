@@ -245,17 +245,15 @@ async function bootstrap() {
     console.warn('⚠️  PostgreSQL Row-Level Security (RLS) setup failed:', e.message);
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Niddo API')
-      .setDescription('API de administración de condominios Niddo')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/docs', app, document);
-    console.log('📚 Swagger docs available at http://0.0.0.0:3000/api/docs');
-  }
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Niddo API')
+    .setDescription('API de administración de condominios Niddo')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+  console.log('📚 Swagger docs available at http://0.0.0.0:3000/api/docs');
 
   await app.listen(3000, '0.0.0.0');
   console.log(`✅ Niddo backend running on http://0.0.0.0:3000`);
