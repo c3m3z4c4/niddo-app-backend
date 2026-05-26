@@ -245,6 +245,18 @@ async function bootstrap() {
     console.warn('⚠️  PostgreSQL Row-Level Security (RLS) setup failed:', e.message);
   }
 
+  const swaggerUser = process.env.SWAGGER_USER ?? 'admin';
+  const swaggerPass = process.env.SWAGGER_PASS ?? 'niddo-docs-2025';
+  app.use('/api/docs', (req: any, res: any, next: any) => {
+    const auth = req.headers['authorization'];
+    if (auth && auth.startsWith('Basic ')) {
+      const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+      if (user === swaggerUser && pass === swaggerPass) return next();
+    }
+    res.setHeader('WWW-Authenticate', 'Basic realm="Niddo API Docs"');
+    res.status(401).send('Unauthorized');
+  });
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Niddo API')
     .setDescription('API de administración de condominios Niddo')
