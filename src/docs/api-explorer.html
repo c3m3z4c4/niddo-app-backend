@@ -281,14 +281,72 @@
   <nav id="sidebar-nav"></nav>
 </div>
 
+<!-- ── LOGIN GATE ─────────────────────────────────────── -->
+<div id="login-gate" style="
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;padding:24px;
+">
+  <div style="
+    background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:48px 44px;max-width:400px;width:100%;text-align:center;
+    box-shadow:0 24px 80px rgba(0,0,0,.5);
+  ">
+    <div style="
+      width:64px;height:64px;background:linear-gradient(135deg,#6366f1,#818cf8);
+      border-radius:18px;margin:0 auto 20px;display:flex;align-items:center;
+      justify-content:center;font-size:28px;font-weight:800;color:#fff;
+      box-shadow:0 8px 24px rgba(99,102,241,.35);letter-spacing:-1px
+    ">N</div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:6px">Niddo API Docs</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:28px;line-height:1.5">
+      Inicia sesión con tu cuenta de administrador para acceder a la documentación.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:500">CORREO ELECTRÓNICO</label>
+        <input id="login-email" type="email" placeholder="admin@niddo.app"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+                 color:var(--text);padding:10px 14px;font-size:13px;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;font-weight:500">CONTRASEÑA</label>
+        <input id="login-pass" type="password" placeholder="••••••••"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+                 color:var(--text);padding:10px 14px;font-size:13px;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div id="login-error" style="display:none;color:#ef4444;font-size:12px;text-align:center;padding:6px 0"></div>
+      <button id="login-btn" onclick="doLogin()" style="
+        background:#6366f1;color:#fff;border:none;border-radius:10px;
+        padding:11px;font-size:13px;font-weight:600;cursor:pointer;
+        transition:background .15s;margin-top:4px;width:100%
+      " onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
+        Iniciar sesión
+      </button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:20px">
+      🔒 Acceso restringido a administradores
+    </p>
+  </div>
+</div>
+
 <!-- ── MAIN ──────────────────────────────────────────── -->
-<div id="main">
+<div id="main" style="display:none">
   <div id="topbar">
     <h1>🏘️ Niddo API Explorer</h1>
-    <input id="auth-input" type="password" placeholder="Bearer token JWT…"/>
-    <button id="auth-btn" onclick="setAuth()">Autenticar</button>
-    <button id="logout-btn" onclick="logout()" style="display:none;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Cerrar sesión</button>
-    <span id="auth-status">Sin autenticar</span>
+    <span id="auth-status" style="font-size:12px;color:#22c55e;flex:1"></span>
+    <button id="logout-btn" onclick="logout()" style="
+      background:transparent;color:var(--muted);border:1px solid var(--border);
+      border-radius:8px;padding:7px 16px;font-size:12px;cursor:pointer;
+      white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px
+    " onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      ↩ Cerrar sesión
+    </button>
   </div>
   <div id="content">
     <div id="welcome"></div>
@@ -559,41 +617,62 @@ async function tryRequest(method, path, id) {
 }
 
 // ── Auth ────────────────────────────────────────────
-function setAuth() {
-  token = document.getElementById('auth-input').value.trim();
-  sessionStorage.setItem('niddo_token', token);
-  applyToken(token);
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  if (!email || !pass) { showLoginError('Completa todos los campos'); return; }
+  btn.textContent = 'Iniciando sesión…'; btn.disabled = true;
+  errEl.style.display = 'none';
+  try {
+    const res  = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showLoginError(data.message || 'Credenciales incorrectas'); return; }
+    if (!data.access_token) { showLoginError('Respuesta inesperada del servidor'); return; }
+    token = data.access_token;
+    sessionStorage.setItem('niddo_token', token);
+    applyToken(token);
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'flex';
+  } catch(e) {
+    showLoginError('Error de conexión: ' + e.message);
+  } finally {
+    btn.textContent = 'Iniciar sesión'; btn.disabled = false;
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
 }
 
 function logout() {
   token = '';
   sessionStorage.removeItem('niddo_token');
-  document.getElementById('auth-input').value = '';
-  applyToken('');
+  document.getElementById('login-gate').style.display = 'flex';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
 }
 
 function applyToken(t) {
-  document.getElementById('auth-input').value = t;
   const status = document.getElementById('auth-status');
-  const logoutBtn = document.getElementById('logout-btn');
   if (t) {
     try {
       const payload = JSON.parse(atob(t.split('.')[1]));
       status.textContent = `✓ ${payload.email || payload.sub || 'Autenticado'} · ${payload.role || ''}`;
-      status.className = 'auth-ok';
     } catch {
-      status.textContent = '✓ Token cargado';
-      status.className = 'auth-ok';
+      status.textContent = '✓ Autenticado';
     }
-    logoutBtn.style.display = 'block';
-  } else {
-    status.textContent = 'Sin autenticar';
-    status.className = '';
-    logoutBtn.style.display = 'none';
   }
-  document.querySelectorAll('.lock-icon').forEach(el => {
-    if (el.textContent.includes('🔒')) el.classList.toggle('authed', !!t);
-  });
 }
 
 // ── Search ──────────────────────────────────────────
@@ -661,6 +740,17 @@ function escHtml(s) {
 }
 
 // ── Boot ────────────────────────────────────────────
+// Hide sidebar until logged in
+document.getElementById('sidebar').style.display = 'none';
+
+// Restore session
+if (token) {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('main').style.display = 'flex';
+  document.getElementById('sidebar').style.display = 'flex';
+  applyToken(token);
+}
+
 loadSpec().catch(e => {
   document.getElementById('welcome').innerHTML = `
     <div style="text-align:center;padding:60px;color:var(--muted)">
