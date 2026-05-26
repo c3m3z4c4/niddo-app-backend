@@ -245,19 +245,6 @@ async function bootstrap() {
     console.warn('⚠️  PostgreSQL Row-Level Security (RLS) setup failed:', e.message);
   }
 
-  const swaggerUser = process.env.SWAGGER_USER ?? 'admin';
-  const swaggerPass = process.env.SWAGGER_PASS ?? 'niddo-docs-2025';
-
-  const basicAuthMiddleware = (req: any, res: any, next: any) => {
-    const auth = req.headers['authorization'];
-    if (auth && auth.startsWith('Basic ')) {
-      const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-      if (user === swaggerUser && pass === swaggerPass) return next();
-    }
-    res.setHeader('WWW-Authenticate', 'Basic realm="Niddo API Docs"');
-    res.status(401).send('Unauthorized');
-  };
-
   // Generate OpenAPI spec
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Niddo API')
@@ -267,14 +254,14 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  // Serve raw JSON spec (protected) — used by custom explorer
-  app.use('/api/docs-json', basicAuthMiddleware, (_req: any, res: any) => {
+  // Serve raw JSON spec — public (explorer itself is protected by JWT gate)
+  app.use('/api/docs-json', (_req: any, res: any) => {
     res.json(document);
   });
 
-  // Serve custom branded explorer (protected)
+  // Serve custom branded explorer — JWT login gate inside the HTML
   const explorerHtml = readFileSync(resolve(__dirname, 'docs/api-explorer.html'), 'utf8');
-  app.use('/api/docs', basicAuthMiddleware, (_req: any, res: any) => {
+  app.use('/api/docs', (_req: any, res: any) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(explorerHtml);
   });
