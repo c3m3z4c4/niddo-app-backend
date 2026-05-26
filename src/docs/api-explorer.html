@@ -287,6 +287,7 @@
     <h1>🏘️ Niddo API Explorer</h1>
     <input id="auth-input" type="password" placeholder="Bearer token JWT…"/>
     <button id="auth-btn" onclick="setAuth()">Autenticar</button>
+    <button id="logout-btn" onclick="logout()" style="display:none;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Cerrar sesión</button>
     <span id="auth-status">Sin autenticar</span>
   </div>
   <div id="content">
@@ -563,9 +564,18 @@ function setAuth() {
   sessionStorage.setItem('niddo_token', token);
   applyToken(token);
 }
+
+function logout() {
+  token = '';
+  sessionStorage.removeItem('niddo_token');
+  document.getElementById('auth-input').value = '';
+  applyToken('');
+}
+
 function applyToken(t) {
   document.getElementById('auth-input').value = t;
   const status = document.getElementById('auth-status');
+  const logoutBtn = document.getElementById('logout-btn');
   if (t) {
     try {
       const payload = JSON.parse(atob(t.split('.')[1]));
@@ -575,9 +585,11 @@ function applyToken(t) {
       status.textContent = '✓ Token cargado';
       status.className = 'auth-ok';
     }
+    logoutBtn.style.display = 'block';
   } else {
     status.textContent = 'Sin autenticar';
     status.className = '';
+    logoutBtn.style.display = 'none';
   }
   document.querySelectorAll('.lock-icon').forEach(el => {
     if (el.textContent.includes('🔒')) el.classList.toggle('authed', !!t);
