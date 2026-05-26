@@ -279,6 +279,14 @@ async function bootstrap() {
     res.send(explorerHtml);
   });
 
+  // Public landing page at root
+  const landingHtml = readFileSync(resolve(__dirname, 'docs/landing.html'), 'utf8');
+  app.use('/', (_req: any, res: any, next: any) => {
+    if (_req.path !== '/') return next();
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(landingHtml);
+  });
+
   console.log('📚 Niddo API Explorer at http://0.0.0.0:3000/api/docs');
 
   await app.listen(3000, '0.0.0.0');

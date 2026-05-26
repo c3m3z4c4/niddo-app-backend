@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Niddo API</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --bg: #0b0f1a;
+    --surface: #141827;
+    --border: #252d42;
+    --text: #e2e8f0;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+
+  /* glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99,102,241,.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 56px 64px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,.4);
+  }
+
+  .logo-mark {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 auto 24px;
+    box-shadow: 0 8px 32px rgba(99,102,241,.35);
+    letter-spacing: -2px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 0 32px;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34,197,94,.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  .btn-docs {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 14px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    justify-content: center;
+    transition: background .15s, box-shadow .15s, transform .1s;
+    box-shadow: 0 4px 16px rgba(99,102,241,.3);
+    margin-bottom: 12px;
+  }
+  .btn-docs:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 8px 24px rgba(99,102,241,.4);
+    transform: translateY(-1px);
+  }
+  .btn-docs:active { transform: translateY(0); }
+
+  .btn-health {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-size: 13px;
+    font-weight: 500;
+    width: 100%;
+    justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-health:hover {
+    border-color: var(--primary);
+    color: var(--text);
+  }
+
+  .meta {
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(99,102,241,.12);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+
+  .lock-note {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    margin-top: 32px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-mark">N</div>
+  <h1>Niddo API</h1>
+  <p class="subtitle">
+    Plataforma SaaS de administración de condominios.<br/>
+    REST API · NestJS · PostgreSQL
+  </p>
+  <hr class="divider"/>
+
+  <div class="status-row">
+    <span class="status-dot"></span>
+    <span>Servidor operando correctamente</span>
+    <span class="badge">v1.0</span>
+  </div>
+
+  <a class="btn-docs" href="/api/docs">
+    📖 Ver documentación de la API
+  </a>
+
+  <a class="btn-health" href="/api/health" target="_blank">
+    ⚡ Health check
+  </a>
+
+  <p class="lock-note">🔒 La documentación requiere credenciales de administrador</p>
+
+  <div class="meta">
+    <span class="meta-item">🏘️ Multi-condominio</span>
+    <span class="meta-item">🔑 JWT Auth</span>
+    <span class="meta-item">🛡️ Row-Level Security</span>
+    <span class="meta-item">📬 REST</span>
+  </div>
+</div>
+
+<footer>
+  © 2025 Niddo · Todos los derechos reservados
+</footer>
+
+</body>
+</html>
