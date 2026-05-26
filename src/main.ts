@@ -5,7 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { resolve } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { Client } from 'pg';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
@@ -247,7 +247,8 @@ async function bootstrap() {
 
   const swaggerUser = process.env.SWAGGER_USER ?? 'admin';
   const swaggerPass = process.env.SWAGGER_PASS ?? 'niddo-docs-2025';
-  app.use('/api/docs', (req: any, res: any, next: any) => {
+
+  const basicAuthMiddleware = (req: any, res: any, next: any) => {
     const auth = req.headers['authorization'];
     if (auth && auth.startsWith('Basic ')) {
       const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
@@ -255,8 +256,9 @@ async function bootstrap() {
     }
     res.setHeader('WWW-Authenticate', 'Basic realm="Niddo API Docs"');
     res.status(401).send('Unauthorized');
-  });
+  };
 
+  // Generate OpenAPI spec
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Niddo API')
     .setDescription('API de administración de condominios Niddo')
@@ -264,8 +266,20 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
-  console.log('📚 Swagger docs available at http://0.0.0.0:3000/api/docs');
+
+  // Serve raw JSON spec (protected) — used by custom explorer
+  app.use('/api/docs-json', basicAuthMiddleware, (_req: any, res: any) => {
+    res.json(document);
+  });
+
+  // Serve custom branded explorer (protected)
+  const explorerHtml = readFileSync(resolve(__dirname, 'docs/api-explorer.html'), 'utf8');
+  app.use('/api/docs', basicAuthMiddleware, (_req: any, res: any) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(explorerHtml);
+  });
+
+  console.log('📚 Niddo API Explorer at http://0.0.0.0:3000/api/docs');
 
   await app.listen(3000, '0.0.0.0');
   console.log(`✅ Niddo backend running on http://0.0.0.0:3000`);

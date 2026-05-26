@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Niddo API Docs</title>
+<style>
+  :root {
+    --primary:       #6366f1;
+    --primary-dark:  #4f46e5;
+    --primary-glow:  rgba(99,102,241,0.15);
+    --bg:            #0b0f1a;
+    --surface:       #141827;
+    --surface2:      #1c2236;
+    --border:        #252d42;
+    --text:          #e2e8f0;
+    --muted:         #64748b;
+    --muted2:        #475569;
+    --GET:     #22c55e; --GET-bg:    rgba(34,197,94,.12);
+    --POST:    #6366f1; --POST-bg:   rgba(99,102,241,.12);
+    --PUT:     #f59e0b; --PUT-bg:    rgba(245,158,11,.12);
+    --PATCH:   #f97316; --PATCH-bg:  rgba(249,115,22,.12);
+    --DELETE:  #ef4444; --DELETE-bg: rgba(239,68,68,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  #sidebar{
+    width:280px;min-width:280px;background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden
+  }
+  #sidebar-header{
+    padding:20px 16px 16px;border-bottom:1px solid var(--border);
+    background:linear-gradient(135deg,#0b0f1a 0%,#141827 100%)
+  }
+  .logo-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .logo-mark{
+    width:36px;height:36px;background:linear-gradient(135deg,var(--primary),#818cf8);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:800;color:#fff;letter-spacing:-1px;flex-shrink:0
+  }
+  .logo-text{font-size:18px;font-weight:700;color:#fff}
+  .logo-sub{font-size:11px;color:var(--muted);margin-top:1px}
+  .badge-version{
+    display:inline-flex;align-items:center;background:var(--primary-glow);
+    color:var(--primary);border:1px solid rgba(99,102,241,.3);
+    border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.5px
+  }
+
+  #search-box{
+    width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:8px 12px 8px 32px;font-size:13px;outline:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:10px center;
+    transition:border-color .2s
+  }
+  #search-box:focus{border-color:var(--primary)}
+
+  #sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
+  #sidebar-nav::-webkit-scrollbar{width:4px}
+  #sidebar-nav::-webkit-scrollbar-track{background:transparent}
+  #sidebar-nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+  .tag-group{margin-bottom:2px}
+  .tag-label{
+    padding:8px 16px;font-size:11px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.8px;color:var(--muted);cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;
+    user-select:none;transition:color .15s
+  }
+  .tag-label:hover{color:var(--text)}
+  .tag-label .chevron{transition:transform .2s;font-size:10px}
+  .tag-label.open .chevron{transform:rotate(90deg)}
+  .tag-endpoints{display:none}
+  .tag-endpoints.open{display:block}
+
+  .nav-item{
+    display:flex;align-items:center;gap:8px;padding:7px 16px 7px 20px;
+    cursor:pointer;border-radius:0;transition:background .15s;
+    font-size:12.5px;color:var(--muted);border-left:2px solid transparent;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{
+    background:var(--primary-glow);color:var(--primary);
+    border-left-color:var(--primary)
+  }
+  .method-pill{
+    font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 5px;
+    border-radius:4px;flex-shrink:0;min-width:42px;text-align:center
+  }
+
+  /* ── Main ────────────────────────────────────────── */
+  #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+  #topbar{
+    background:var(--surface);border-bottom:1px solid var(--border);
+    padding:12px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0
+  }
+  #topbar h1{font-size:14px;font-weight:600;color:var(--text);flex:1}
+  #auth-input{
+    background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:7px 12px;font-size:12px;width:340px;outline:none;
+    font-family:monospace;transition:border-color .2s
+  }
+  #auth-input:focus{border-color:var(--primary)}
+  #auth-input::placeholder{color:var(--muted);font-family:system-ui}
+  #auth-btn{
+    background:var(--primary);color:#fff;border:none;border-radius:8px;
+    padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;
+    transition:background .15s;white-space:nowrap
+  }
+  #auth-btn:hover{background:var(--primary-dark)}
+  #auth-status{font-size:11px;color:var(--muted);white-space:nowrap}
+  .auth-ok{color:#22c55e!important}
+
+  #content{flex:1;overflow-y:auto;padding:24px}
+  #content::-webkit-scrollbar{width:6px}
+  #content::-webkit-scrollbar-track{background:transparent}
+  #content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+  /* ── Welcome ─────────────────────────────────────── */
+  #welcome{
+    max-width:680px;margin:40px auto;text-align:center;
+    animation:fadeIn .4s ease
+  }
+  #welcome .big-logo{
+    width:72px;height:72px;background:linear-gradient(135deg,var(--primary),#818cf8);
+    border-radius:20px;margin:0 auto 20px;display:flex;align-items:center;
+    justify-content:center;font-size:32px;font-weight:800;color:#fff;
+    box-shadow:0 8px 32px rgba(99,102,241,.3)
+  }
+  #welcome h2{font-size:28px;font-weight:700;margin-bottom:8px}
+  #welcome p{color:var(--muted);font-size:14px;line-height:1.6;max-width:480px;margin:0 auto 24px}
+  .stats-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .stat-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px 24px;text-align:center;min-width:100px
+  }
+  .stat-card .num{font-size:24px;font-weight:700;color:var(--primary)}
+  .stat-card .lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* ── Endpoint card ───────────────────────────────── */
+  .endpoint-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    margin-bottom:12px;overflow:hidden;transition:border-color .2s;
+    animation:fadeIn .3s ease
+  }
+  .endpoint-card:hover{border-color:var(--primary-dark)}
+  .endpoint-header{
+    display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;
+    user-select:none
+  }
+  .method-badge{
+    font-size:11px;font-weight:700;letter-spacing:.5px;padding:4px 9px;
+    border-radius:6px;min-width:56px;text-align:center;flex-shrink:0
+  }
+  .endpoint-path{font-size:13px;font-family:monospace;color:var(--text);flex:1}
+  .endpoint-path .path-param{color:var(--primary)}
+  .endpoint-summary{font-size:12px;color:var(--muted);flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lock-icon{font-size:12px;color:var(--muted2);flex-shrink:0}
+  .lock-icon.authed{color:#22c55e}
+  .expand-icon{color:var(--muted);font-size:12px;transition:transform .2s;flex-shrink:0}
+  .endpoint-card.open .expand-icon{transform:rotate(180deg)}
+
+  .endpoint-body{display:none;border-top:1px solid var(--border)}
+  .endpoint-card.open .endpoint-body{display:block}
+
+  .endpoint-section{padding:16px 18px;border-bottom:1px solid var(--border)}
+  .endpoint-section:last-child{border-bottom:none}
+  .section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+
+  /* params */
+  .param-row{
+    display:flex;align-items:baseline;gap:10px;padding:6px 0;
+    border-bottom:1px dashed var(--border);font-size:12.5px
+  }
+  .param-row:last-child{border-bottom:none}
+  .param-name{font-family:monospace;color:var(--primary);min-width:120px}
+  .param-in{font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--muted);margin-right:4px}
+  .param-required{color:#ef4444;font-size:10px;font-weight:600}
+  .param-type{color:var(--muted);font-size:11px;font-family:monospace}
+  .param-desc{color:var(--muted2);font-size:12px;margin-left:auto}
+
+  /* try it out */
+  .try-section{padding:16px 18px;background:var(--bg)}
+  .try-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .try-form{display:flex;flex-direction:column;gap:8px}
+  .try-field{
+    background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:8px 12px;font-size:12.5px;font-family:monospace;
+    outline:none;resize:vertical;transition:border-color .2s;width:100%
+  }
+  .try-field:focus{border-color:var(--primary)}
+  .try-field::placeholder{color:var(--muted);font-family:system-ui;font-size:12px}
+  .try-row{display:flex;gap:8px;align-items:center}
+  .try-label{font-size:11px;color:var(--muted);min-width:60px}
+  .try-btn{
+    background:var(--primary);color:#fff;border:none;border-radius:8px;
+    padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;
+    transition:background .15s;align-self:flex-end;white-space:nowrap
+  }
+  .try-btn:hover{background:var(--primary-dark)}
+  .try-btn:disabled{opacity:.5;cursor:not-allowed}
+  .try-btn.loading::after{content:' …'}
+
+  /* response */
+  .response-box{
+    margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid var(--border)
+  }
+  .response-header{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;
+    background:var(--surface);font-size:12px
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%}
+  .response-pre{
+    background:var(--bg);padding:12px;font-size:12px;font-family:monospace;
+    overflow-x:auto;max-height:400px;overflow-y:auto;color:#a5f3fc;
+    white-space:pre-wrap;word-break:break-all
+  }
+  .copy-btn{
+    background:none;border:1px solid var(--border);border-radius:6px;
+    color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer;
+    margin-left:auto;transition:all .15s
+  }
+  .copy-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+  /* tag section header */
+  .tag-section-header{
+    display:flex;align-items:center;gap:10px;margin:32px 0 14px;
+    padding-bottom:10px;border-bottom:1px solid var(--border)
+  }
+  .tag-section-header:first-child{margin-top:0}
+  .tag-icon{
+    width:32px;height:32px;background:var(--primary-glow);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+    border:1px solid rgba(99,102,241,.2)
+  }
+  .tag-section-header h3{font-size:15px;font-weight:600}
+  .tag-count{
+    font-size:11px;color:var(--muted);background:var(--surface2);
+    border:1px solid var(--border);border-radius:20px;padding:1px 8px;
+    margin-left:auto
+  }
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .method-GET    {color:var(--GET);   background:var(--GET-bg)   }
+  .method-POST   {color:var(--POST);  background:var(--POST-bg)  }
+  .method-PUT    {color:var(--PUT);   background:var(--PUT-bg)   }
+  .method-PATCH  {color:var(--PATCH); background:var(--PATCH-bg) }
+  .method-DELETE {color:var(--DELETE);background:var(--DELETE-bg)}
+
+  .schema-block{
+    background:var(--bg);border-radius:8px;border:1px solid var(--border);
+    padding:12px 14px;font-size:11.5px;font-family:monospace;color:#a5f3fc;
+    overflow-x:auto;max-height:240px;overflow-y:auto;white-space:pre
+  }
+  .no-results{text-align:center;padding:60px 24px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ───────────────────────────────────────── -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <div class="logo-row">
+      <div class="logo-mark">N</div>
+      <div>
+        <div class="logo-text">Niddo</div>
+        <div class="logo-sub">API Reference</div>
+      </div>
+    </div>
+    <span class="badge-version" id="api-version">v1.0</span>
+  </div>
+  <div style="padding:10px 12px 6px">
+    <input id="search-box" type="text" placeholder="Buscar endpoint…" autocomplete="off"/>
+  </div>
+  <nav id="sidebar-nav"></nav>
+</div>
+
+<!-- ── MAIN ──────────────────────────────────────────── -->
+<div id="main">
+  <div id="topbar">
+    <h1>🏘️ Niddo API Explorer</h1>
+    <input id="auth-input" type="password" placeholder="Bearer token JWT…"/>
+    <button id="auth-btn" onclick="setAuth()">Autenticar</button>
+    <span id="auth-status">Sin autenticar</span>
+  </div>
+  <div id="content">
+    <div id="welcome"></div>
+    <div id="endpoints-root"></div>
+  </div>
+</div>
+
+<script>
+const BASE_URL = window.location.origin;
+let spec = null;
+let token = sessionStorage.getItem('niddo_token') || '';
+let allEndpoints = [];
+
+const METHOD_ICONS = {GET:'↓',POST:'✚',PUT:'↑',PATCH:'⟳',DELETE:'✕'};
+const TAG_ICONS = {
+  Auth:'🔑', Users:'👤', Houses:'🏠', Events:'📅', Meetings:'📋',
+  Dues:'💰', Messages:'✉️', Notifications:'🔔', Projects:'🏗️',
+  Reservations:'🌿', Condominiums:'🏘️', Billing:'💳', Backups:'💾',
+  default:'⚡'
+};
+
+// ── Load spec ───────────────────────────────────────
+async function loadSpec() {
+  const res = await fetch('/api/docs-json');
+  spec = await res.json();
+  document.getElementById('api-version').textContent = 'v' + (spec.info?.version || '1.0');
+  buildEndpoints();
+  renderWelcome();
+  renderSidebar();
+  renderAll(allEndpoints);
+  if (token) applyToken(token);
+}
+
+function buildEndpoints() {
+  allEndpoints = [];
+  for (const [path, methods] of Object.entries(spec.paths || {})) {
+    for (const [method, op] of Object.entries(methods)) {
+      if (['get','post','put','patch','delete'].includes(method)) {
+        allEndpoints.push({ method: method.toUpperCase(), path, op, id: `${method}-${path}` });
+      }
+    }
+  }
+}
+
+// ── Welcome screen ──────────────────────────────────
+function renderWelcome() {
+  const tags = [...new Set(allEndpoints.flatMap(e => e.op.tags || ['Other']))];
+  document.getElementById('welcome').innerHTML = `
+    <div class="big-logo">N</div>
+    <h2>Niddo API Reference</h2>
+    <p>${spec.info?.description || 'API de administración de condominios.'} Selecciona un endpoint en la barra lateral o navega por las secciones de abajo.</p>
+    <div class="stats-row">
+      <div class="stat-card"><div class="num">${allEndpoints.length}</div><div class="lbl">Endpoints</div></div>
+      <div class="stat-card"><div class="num">${tags.length}</div><div class="lbl">Módulos</div></div>
+      <div class="stat-card"><div class="num">${allEndpoints.filter(e=>e.method==='GET').length}</div><div class="lbl">GET</div></div>
+      <div class="stat-card"><div class="num">${allEndpoints.filter(e=>e.method==='POST').length}</div><div class="lbl">POST</div></div>
+      <div class="stat-card"><div class="num">${allEndpoints.filter(e=>['PUT','PATCH'].includes(e.method)).length}</div><div class="lbl">PUT/PATCH</div></div>
+      <div class="stat-card"><div class="num">${allEndpoints.filter(e=>e.method==='DELETE').length}</div><div class="lbl">DELETE</div></div>
+    </div>
+  `;
+}
+
+// ── Sidebar ─────────────────────────────────────────
+function renderSidebar() {
+  const byTag = groupByTag(allEndpoints);
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  for (const [tag, eps] of Object.entries(byTag)) {
+    const group = document.createElement('div');
+    group.className = 'tag-group';
+    const icon = TAG_ICONS[tag] || TAG_ICONS.default;
+    group.innerHTML = `
+      <div class="tag-label open" onclick="toggleTag(this)">
+        <span>${icon} ${tag}</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="tag-endpoints open">
+        ${eps.map(e => `
+          <div class="nav-item" onclick="scrollTo('ep-${CSS.escape(e.id)}')" data-id="${e.id}">
+            <span class="method-pill method-${e.method}">${e.method}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis">${e.path}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    nav.appendChild(group);
+  }
+}
+
+function toggleTag(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+// ── Render all endpoints ────────────────────────────
+function renderAll(eps) {
+  const root = document.getElementById('endpoints-root');
+  if (!eps.length) { root.innerHTML = '<div class="no-results">No se encontraron endpoints</div>'; return; }
+  const byTag = groupByTag(eps);
+  root.innerHTML = '';
+  for (const [tag, tagEps] of Object.entries(byTag)) {
+    const icon = TAG_ICONS[tag] || TAG_ICONS.default;
+    const section = document.createElement('div');
+    section.innerHTML = `
+      <div class="tag-section-header">
+        <div class="tag-icon">${icon}</div>
+        <h3>${tag}</h3>
+        <span class="tag-count">${tagEps.length} endpoints</span>
+      </div>
+    `;
+    root.appendChild(section);
+    tagEps.forEach(e => root.appendChild(buildCard(e)));
+  }
+}
+
+function groupByTag(eps) {
+  const map = {};
+  eps.forEach(e => {
+    const tag = (e.op.tags && e.op.tags[0]) || 'Other';
+    if (!map[tag]) map[tag] = [];
+    map[tag].push(e);
+  });
+  return map;
+}
+
+// ── Build endpoint card ──────────────────────────────
+function buildCard(e) {
+  const card = document.createElement('div');
+  card.className = 'endpoint-card';
+  card.id = `ep-${e.id}`;
+
+  const secured = (e.op.security || spec.security || []).length > 0;
+  const params = e.op.parameters || [];
+  const pathParams = params.filter(p => p.in === 'path');
+  const queryParams = params.filter(p => p.in === 'query');
+  const headerParams = params.filter(p => p.in === 'header');
+
+  const pathHtml = e.path.replace(/\{([^}]+)\}/g, '<span class="path-param">{$1}</span>');
+  const bodySchema = e.op.requestBody?.content?.['application/json']?.schema;
+
+  card.innerHTML = `
+    <div class="endpoint-header" onclick="toggleCard(this.parentElement)">
+      <span class="method-badge method-${e.method}">${e.method}</span>
+      <span class="endpoint-path">${pathHtml}</span>
+      <span class="endpoint-summary">${e.op.summary || ''}</span>
+      <span class="lock-icon" title="${secured ? 'Requiere JWT' : 'Público'}">
+        ${secured ? '🔒' : '🔓'}
+      </span>
+      <span class="expand-icon">▾</span>
+    </div>
+    <div class="endpoint-body">
+      ${e.op.description ? `<div class="endpoint-section"><p style="font-size:13px;color:var(--muted);line-height:1.6">${e.op.description}</p></div>` : ''}
+
+      ${params.length ? `
+      <div class="endpoint-section">
+        <div class="section-title">Parámetros</div>
+        ${[...pathParams,...queryParams,...headerParams].map(p=>`
+          <div class="param-row">
+            <span class="param-name">${p.name}</span>
+            <span class="param-in">${p.in}</span>
+            ${p.required ? '<span class="param-required">required</span>' : ''}
+            <span class="param-type">${p.schema?.type || 'string'}</span>
+            <span class="param-desc">${p.description || ''}</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      ${bodySchema ? `
+      <div class="endpoint-section">
+        <div class="section-title">Request Body</div>
+        <div class="schema-block">${schemaToString(bodySchema)}</div>
+      </div>` : ''}
+
+      <div class="try-section">
+        <div class="try-title">⚡ Try it out</div>
+        <div class="try-form" id="form-${e.id}">
+          ${pathParams.map(p=>`
+            <div class="try-row">
+              <span class="try-label">{${p.name}}</span>
+              <input class="try-field" style="resize:none;height:36px" placeholder="${p.name}" data-param="${p.name}"/>
+            </div>
+          `).join('')}
+          ${queryParams.map(p=>`
+            <div class="try-row">
+              <span class="try-label">?${p.name}</span>
+              <input class="try-field" style="resize:none;height:36px" placeholder="${p.name}" data-query="${p.name}"/>
+            </div>
+          `).join('')}
+          ${bodySchema ? `<textarea class="try-field" rows="5" placeholder="${JSON.stringify(schemaToExample(bodySchema),null,2)}" data-body></textarea>` : ''}
+          <button class="try-btn" onclick="tryRequest('${e.method}','${e.path}','${e.id}')">
+            ${METHOD_ICONS[e.method] || '▶'} Ejecutar
+          </button>
+          <div id="res-${e.id}"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function toggleCard(card) {
+  card.classList.toggle('open');
+  const id = card.id.replace('ep-','');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.id === id && card.classList.contains('open'));
+  });
+}
+
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  if (!el.classList.contains('open')) toggleCard(el);
+}
+
+// ── Try it out ──────────────────────────────────────
+async function tryRequest(method, path, id) {
+  const form = document.getElementById('form-' + id);
+  const btn = form.querySelector('.try-btn');
+  btn.disabled = true; btn.classList.add('loading');
+
+  let url = BASE_URL + path;
+  const queryParts = [];
+
+  form.querySelectorAll('[data-param]').forEach(inp => {
+    url = url.replace(`{${inp.dataset.param}}`, encodeURIComponent(inp.value || inp.dataset.param));
+  });
+  form.querySelectorAll('[data-query]').forEach(inp => {
+    if (inp.value) queryParts.push(`${inp.dataset.query}=${encodeURIComponent(inp.value)}`);
+  });
+  if (queryParts.length) url += '?' + queryParts.join('&');
+
+  const bodyEl = form.querySelector('[data-body]');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let body = undefined;
+  if (bodyEl && bodyEl.value) {
+    try { body = bodyEl.value; } catch(e) {}
+  }
+
+  const t0 = Date.now();
+  let res, data;
+  try {
+    res = await fetch(url, { method, headers, body });
+    const text = await res.text();
+    try { data = JSON.parse(text); data = JSON.stringify(data, null, 2); } catch { data = text; }
+  } catch(e) { data = 'Error de red: ' + e.message; }
+
+  const elapsed = Date.now() - t0;
+  const ok = res && res.ok;
+  const status = res ? res.status : 'ERR';
+
+  const resBox = document.getElementById('res-' + id);
+  resBox.innerHTML = `
+    <div class="response-box">
+      <div class="response-header">
+        <div class="status-dot" style="background:${ok?'#22c55e':'#ef4444'}"></div>
+        <span style="font-weight:600;color:${ok?'#22c55e':'#ef4444'}">${status}</span>
+        <span style="color:var(--muted);font-size:11px">${elapsed}ms · ${res?.headers.get('content-type')||''}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('pre-${id}').textContent)">Copiar</button>
+      </div>
+      <pre class="response-pre" id="pre-${id}">${escHtml(data||'')}</pre>
+    </div>
+  `;
+
+  btn.disabled = false; btn.classList.remove('loading');
+}
+
+// ── Auth ────────────────────────────────────────────
+function setAuth() {
+  token = document.getElementById('auth-input').value.trim();
+  sessionStorage.setItem('niddo_token', token);
+  applyToken(token);
+}
+function applyToken(t) {
+  document.getElementById('auth-input').value = t;
+  const status = document.getElementById('auth-status');
+  if (t) {
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1]));
+      status.textContent = `✓ ${payload.email || payload.sub || 'Autenticado'} · ${payload.role || ''}`;
+      status.className = 'auth-ok';
+    } catch {
+      status.textContent = '✓ Token cargado';
+      status.className = 'auth-ok';
+    }
+  } else {
+    status.textContent = 'Sin autenticar';
+    status.className = '';
+  }
+  document.querySelectorAll('.lock-icon').forEach(el => {
+    if (el.textContent.includes('🔒')) el.classList.toggle('authed', !!t);
+  });
+}
+
+// ── Search ──────────────────────────────────────────
+document.getElementById('search-box').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  if (!q) { renderAll(allEndpoints); renderSidebar(); return; }
+  const filtered = allEndpoints.filter(e =>
+    e.path.toLowerCase().includes(q) ||
+    e.method.toLowerCase().includes(q) ||
+    (e.op.summary||'').toLowerCase().includes(q) ||
+    (e.op.tags||[]).join(' ').toLowerCase().includes(q)
+  );
+  renderAll(filtered);
+});
+
+// ── Schema helpers ───────────────────────────────────
+function schemaToString(schema, depth=0) {
+  if (!schema) return '{}';
+  if (schema.$ref) return resolveRef(schema.$ref);
+  if (schema.type === 'object' || schema.properties) {
+    const props = schema.properties || {};
+    const lines = Object.entries(props).map(([k,v]) => {
+      const req = (schema.required||[]).includes(k) ? '' : '?';
+      return `  ${k}${req}: ${schemaToString(v, depth+1)}`;
+    });
+    return `{\n${lines.join('\n')}\n}`;
+  }
+  if (schema.type === 'array') return `${schemaToString(schema.items, depth)}[]`;
+  return schema.type || schema.format || 'any';
+}
+
+function schemaToExample(schema, depth=0) {
+  if (!schema || depth > 3) return {};
+  if (schema.$ref) {
+    const resolved = resolveRefObj(schema.$ref);
+    return resolved ? schemaToExample(resolved, depth) : {};
+  }
+  if (schema.type === 'object' || schema.properties) {
+    const obj = {};
+    for (const [k,v] of Object.entries(schema.properties||{})) {
+      obj[k] = schemaToExample(v, depth+1);
+    }
+    return obj;
+  }
+  if (schema.type === 'array') return [schemaToExample(schema.items, depth+1)];
+  if (schema.example !== undefined) return schema.example;
+  const map = {string:'string',number:0,integer:0,boolean:true};
+  return map[schema.type] ?? null;
+}
+
+function resolveRef(ref) {
+  const obj = resolveRefObj(ref);
+  return obj ? schemaToString(obj) : ref;
+}
+function resolveRefObj(ref) {
+  if (!ref || !spec) return null;
+  const parts = ref.replace('#/','').split('/');
+  let cur = spec;
+  for (const p of parts) { cur = cur?.[p]; if (!cur) return null; }
+  return cur;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Boot ────────────────────────────────────────────
+loadSpec().catch(e => {
+  document.getElementById('welcome').innerHTML = `
+    <div style="text-align:center;padding:60px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+      <h3 style="margin-bottom:8px;color:var(--text)">Error al cargar la especificación</h3>
+      <p>${e.message}</p>
+    </div>
+  `;
+});
+</script>
+</body>
+</html>
